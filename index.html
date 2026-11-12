@@ -66,12 +66,16 @@ footer.foot{text-align:center;color:var(--dim);font-size:12.5px}
 
 /* map */
 .mapbox{position:relative;height:min(64vh,540px);min-height:340px;background:#18227A;overflow:hidden}
-.mapbox svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.mapbox>svg{position:absolute;inset:0;width:100%;height:100%;display:block}
 .mapbox .mtop{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;gap:8px;pointer-events:none;flex-wrap:wrap}
 .chip{background:var(--panel2);border-radius:99px;padding:3px 12px;font-size:13px;display:inline-flex;align-items:center;gap:6px}
 .chip i{width:10px;height:8px;background:var(--glow);display:inline-block;border-radius:1px}
 .chip .me{width:10px;height:10px;border-radius:50%;background:#6FB6FF}
-.mapbox .north{position:absolute;top:auto;left:auto;right:10px;bottom:10px;width:34px;height:34px;pointer-events:none}
+.mapbox svg#map{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.mapbox svg#map:active{cursor:grabbing}
+.mctl{position:absolute;right:10px;bottom:10px;display:grid;gap:8px}
+.mctl button{width:40px;height:40px;border-radius:50%;border:0;padding:6px;background:rgba(20,27,92,.88);cursor:pointer;display:grid;place-items:center}
+.mctl button svg{width:100%;height:100%;display:block;position:static}
 .house{cursor:pointer}
 .spotlist{display:grid;gap:8px}
 .spotrow{display:flex;align-items:center;gap:12px;background:var(--panel);border-radius:12px;padding:10px 12px;text-decoration:none;color:var(--ink)}
@@ -96,7 +100,12 @@ footer.foot{text-align:center;color:var(--dim);font-size:12.5px}
 .th img{width:100%;height:100%;object-fit:cover;display:block}
 .th .st{position:absolute;left:4px;bottom:4px;font-size:11px;font-weight:700;border-radius:99px;padding:0 7px;background:rgba(20,27,92,.88)}
 .th .st.ok{color:var(--ok)}.th .st.wait{color:var(--glow)}.th .st.up{color:#fff}.th .st.local{color:var(--muted)}
-.th .x{position:absolute;right:3px;top:3px;width:26px;height:26px;border-radius:50%;border:0;background:rgba(20,27,92,.88);color:#fff;cursor:pointer;font-size:15px;line-height:26px;padding:0}
+.th button{all:unset;display:block;width:100%;height:100%;cursor:pointer}
+.th .ed{position:absolute;right:4px;top:4px;font-size:11px;font-weight:700;border-radius:99px;padding:0 7px;background:rgba(20,27,92,.88);color:#fff;pointer-events:none}
+.sheet{position:fixed;inset:0;z-index:70;background:rgba(10,14,50,.72);display:grid;align-items:end;justify-items:center}
+.sheet .in{width:min(100%,480px);background:#1E2A86;border-radius:18px 18px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));display:grid;gap:10px}
+.sheet img{width:100%;max-height:46vh;object-fit:contain;border-radius:10px;background:#141B5C}
+.btn.warn{background:transparent;color:#FF9FB8;box-shadow:inset 0 0 0 2px #FF9FB8}
 .addph{aspect-ratio:1;border-radius:8px;display:grid;place-items:center;text-align:center;font-size:13px;color:var(--glow-ink);cursor:pointer;background:var(--glow);font-weight:700;line-height:1.4}
 .addph b{display:block;font-size:26px;line-height:1}
 .pager{display:flex;justify-content:space-between;gap:10px}
@@ -130,6 +139,7 @@ footer.foot{text-align:center;color:var(--dim);font-size:12.5px}
 </div></nav>
 <main id="app"></main>
 <div class="toast" id="toast" role="status"></div>
+<div class="sheet" id="sheet" hidden><div class="in" role="dialog" aria-modal="true" aria-labelledby="shT"><h3 id="shT" style="margin:0">這張照片</h3><img id="shImg" alt=""><p class="small" id="shTxt" style="margin:0"></p><label class="btn block" for="shFile">換一張</label><input type="file" id="shFile" accept="image/*" hidden><button class="btn warn block" type="button" id="shDel">刪除這張</button><button class="btn ghost block" type="button" id="shX">取消</button></div></div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
@@ -231,18 +241,22 @@ footer.foot{text-align:center;color:var(--dim);font-size:12.5px}
     return s+treeSvg(146,93,6.5)+'</g></svg>';
   }
 
-  /* ================= 地圖：真實座標，上方是北（和 Google 地圖同方向），斜看一點點 ================= */
+  /* ================= 地圖：真實座標，預設上方是北（和 Google 地圖同方向），可以拖曳、縮放、雙指旋轉 ================= */
   var C0=S.center||{lat:22.9922,lng:120.2061};
   var LAT0=C0.lat, LNG0=C0.lng, KX=111320*Math.cos(LAT0*Math.PI/180), KY=110540, TQ=.72;
   function xy(lat,lng){return [(lng-LNG0)*KX,(LAT0-lat)*KY]}
-  function pj(p){return [p[0],p[1]*TQ]}
+  var VIEW={th:0,z:1,c:null};   // th：旋轉角度（弧度，順時針）；z：縮放；c：畫面中心（公尺座標）
+  function rot(p,th){var c=Math.cos(th),s=Math.sin(th);return [p[0]*c-p[1]*s,p[0]*s+p[1]*c]}
+  function pj(p){var r=rot(p,VIEW.th);return [r[0],r[1]*TQ]}
   function distSeg(p,a,b){var dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy,t=L?((p[0]-a[0])*dx+(p[1]-a[1])*dy)/L:0;t=Math.max(0,Math.min(1,t));return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy)}
   function nearLine(p,pts,d){for(var i=0;i<pts.length-1;i++)if(distSeg(p,pts[i],pts[i+1])<d)return true;return false}
   var STREETS=(S.streets||[]).map(function(st){return {name:st.name,w:st.width||14,pts:st.path.map(function(q){return xy(q[0],q[1])})}});
   var ROUTE=(S.route||[]).map(function(q){return xy(q[0],q[1])});
   var PARK=S.park?{name:S.park.name,c:xy(S.park.lat,S.park.lng),r:S.park.r||60}:null;
 
-  function buildHouses(){
+  var WORLD=null;
+  function buildWorld(){
+    if(WORLD)return WORLD;
     var hs=[], r=rand(11);
     SP.forEach(function(s,i){hs.push({id:s.id,no:i+1,g:xy(s.lat,s.lng),sz:7,h:10,cols:3,rows:2,roof:'gable',spot:true,name:s.name})});
     function blocked(g,d){
@@ -250,67 +264,122 @@ footer.foot{text-align:center;color:var(--dim);font-size:12.5px}
       if(PARK&&Math.hypot(g[0]-PARK.c[0],g[1]-PARK.c[1])<PARK.r+8)return true;
       return STREETS.some(function(st){return nearLine(g,st.pts,st.w/2+6)})||(ROUTE.length>1&&nearLine(g,ROUTE,7));
     }
-    // 在路線兩側、以及整個範圍內鋪上鄰居小屋與樹
-    var xs=SP.map(function(s){return xy(s.lat,s.lng)[0]}).concat(ROUTE.map(function(p){return p[0]})),ys=SP.map(function(s){return xy(s.lat,s.lng)[1]}).concat(ROUTE.map(function(p){return p[1]}));
-    var x0=Math.min.apply(null,xs)-55,x1=Math.max.apply(null,xs)+55,y0=Math.min.apply(null,ys)-45,y1=Math.max.apply(null,ys)+45;
-    if(PARK){x0=Math.min(x0,PARK.c[0]-PARK.r*.75);y0=Math.min(y0,PARK.c[1]-PARK.r*.6);y1=Math.max(y1,PARK.c[1]+PARK.r*.6)}
-    for(var y=y0;y<=y1;y+=15)for(var x=x0;x<=x1;x+=16){
+    var pts=SP.map(function(s){return xy(s.lat,s.lng)}).concat(ROUTE);
+    if(PARK)pts.push([PARK.c[0]-PARK.r,PARK.c[1]-PARK.r],[PARK.c[0]+PARK.r,PARK.c[1]+PARK.r]);
+    if(!pts.length)pts=[[0,0]];
+    var xs=pts.map(function(p){return p[0]}),ys=pts.map(function(p){return p[1]});
+    var box=[Math.min.apply(null,xs)-30,Math.min.apply(null,ys)-30,Math.max.apply(null,xs)+30,Math.max.apply(null,ys)+30];
+    var c=[(box[0]+box[2])/2,(box[1]+box[3])/2], R=Math.hypot(box[2]-box[0],box[3]-box[1])/2+60;
+    // 整個範圍鋪上鄰居小屋與樹（範圍是圓形，旋轉時四周也有房子）
+    for(var y=c[1]-R;y<=c[1]+R;y+=15)for(var x=c[0]-R;x<=c[0]+R;x+=16){
       var g=[x+(r()-.5)*5,y+(r()-.5)*4];
-      if(r()<.25||blocked(g,12))continue;
+      if(r()<.25||Math.hypot(g[0]-c[0],g[1]-c[1])>R||blocked(g,12))continue;
       hs.push({id:'f'+hs.length,g:g,sz:4.3+r()*1,h:r()>.82?10:5.6+r()*1.2,roof:r()>.8?'flat':'gable',spot:false,tree:r()>.8});
     }
-    return {hs:hs,box:[x0,y0,x1,y1]};
+    WORLD={hs:hs,box:box,c:c,R:R};
+    return WORLD;
   }
 
-  /* opts: {lit:{id:n}, me:[lat,lng], flick:{id:idx}} → svg string + viewBox */
-  function mapSvg(opts){
-    opts=opts||{};
-    var B=buildHouses(), hs=B.hs, lit=opts.lit||{}, flick=opts.flick||{};
-    hs.forEach(function(h){h.p=pj(h.g)});
-    var tl=pj([B.box[0],B.box[1]]),br=pj([B.box[2],B.box[3]]);
-    var vb=[tl[0],tl[1]-12,br[0]-tl[0],br[1]-tl[1]+18];
-    var g='<g transform="scale(1 '+TQ+')"><rect x="-3000" y="-3000" width="6000" height="6000" fill="#1E2A86"/>';
-    for(var i=-30;i<=30;i++) g+='<path d="M'+(i*50)+' -3000V3000M-3000 '+(i*50)+'H3000" stroke="#24319A" stroke-width="1"/>';
-    if(PARK){ // 湯德章紀念公園：外圈車道、圓形草地、沿邊一圈大樹、四條步道通往中央廣場
-      var cx=PARK.c[0],cy=PARK.c[1],R=PARK.r;
-      g+='<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R+10)+'" fill="#3546B8"/><circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R+10)+'" fill="none" stroke="#5B74F0" stroke-width=".8" stroke-dasharray="4 5"/>';
-      g+='<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R+1.5)+'" fill="#7D8FE6"/><circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+R+'" fill="#1F7A68"/>';
-      for(var a=0;a<4;a++){var an=a*Math.PI/2+Math.PI/4;g+='<line x1="'+f1(cx+Math.cos(an)*R)+'" y1="'+f1(cy+Math.sin(an)*R)+'" x2="'+f1(cx)+'" y2="'+f1(cy)+'" stroke="#8FA0EA" stroke-width="5"/>'}
-      g+='<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R*.36)+'" fill="#26957E"/><circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R*.2)+'" fill="#8FA0EA"/><circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R*.11)+'" fill="#A9B6F2"/>';
-    }
-    STREETS.forEach(function(st){var d='M'+st.pts.map(function(p){return f1(p[0])+' '+f1(p[1])}).join('L');g+='<path d="'+d+'" fill="none" stroke="#3546B8" stroke-width="'+st.w+'" stroke-linecap="round" stroke-linejoin="round"/>'});
-    if(ROUTE.length>1){var rd='M'+ROUTE.map(function(p){return f1(p[0])+' '+f1(p[1])}).join('L');
-      g+='<path d="'+rd+'" fill="none" stroke="#2D3CB2" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="'+rd+'" fill="none" stroke="#FFD94D" stroke-width="1.6" stroke-dasharray="4 5" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>'}
-    g+='</g>';
-    var top2='', catDone=false;
-    // labels for streets and park
-    STREETS.forEach(function(st){var m=st.pts[Math.floor(st.pts.length/2)],a2=st.pts[0],b2=st.pts[st.pts.length-1],ang=Math.atan2((b2[1]-a2[1])*TQ,b2[0]-a2[0])*180/Math.PI;if(ang>90)ang-=180;if(ang<-90)ang+=180;var q=pj(m);
-      top2+='<text x="'+f1(q[0])+'" y="'+f1(q[1]+1.6)+'" text-anchor="middle" font-size="5" font-weight="700" fill="#B9C8FF" letter-spacing="2" transform="rotate('+f1(ang)+' '+f1(q[0])+' '+f1(q[1])+')" font-family="Noto Sans TC,sans-serif">'+esc(st.name)+'</text>'});
-    if(PARK){var pc=pj(PARK.c),pk='';
-      for(var t=0;t<22;t++){var an2=t/22*Math.PI*2+.07,rr2=PARK.r*(t%2?.8:.9),tp=pj([PARK.c[0]+Math.cos(an2)*rr2,PARK.c[1]+Math.sin(an2)*rr2]);if(Math.abs(Math.sin(an2-Math.PI/4)*Math.cos(an2-Math.PI/4))<.08)continue;pk+=treeSvg(tp[0],tp[1],t%3?4.6:5.6)}
-      // 中央：台座上的湯德章半身銅像
-      pk+='<ellipse cx="'+f1(pc[0])+'" cy="'+f1(pc[1]+.6)+'" rx="4.2" ry="1.6" fill="#6E7FD8"/><rect x="'+f1(pc[0]-2.4)+'" y="'+f1(pc[1]-6)+'" width="4.8" height="6.4" fill="#D9DEF5"/><rect x="'+f1(pc[0]-2.4)+'" y="'+f1(pc[1]-6)+'" width="1.4" height="6.4" fill="#BAC3EC"/><rect x="'+f1(pc[0]-3)+'" y="'+f1(pc[1]-6.8)+'" width="6" height="1" fill="#E8ECFA"/>'+
-        '<path d="M'+f1(pc[0]-2.6)+' '+f1(pc[1]-6.8)+'Q'+f1(pc[0])+' '+f1(pc[1]-10.2)+' '+f1(pc[0]+2.6)+' '+f1(pc[1]-6.8)+'Z" fill="#B07A4E"/><circle cx="'+f1(pc[0])+'" cy="'+f1(pc[1]-10.6)+'" r="1.7" fill="#C58C5C"/><path d="M'+f1(pc[0]-1.7)+' '+f1(pc[1]-11)+'A1.7 1.7 0 0 1 '+f1(pc[0]+1.7)+' '+f1(pc[1]-11)+'Z" fill="#8A5A38"/>';
-      g+=pk;
-      top2+='<text x="'+f1(pc[0])+'" y="'+f1(pc[1]+PARK.r*TQ*.36+5)+'" text-anchor="middle" font-size="4.6" font-weight="700" fill="#E6FFF6" stroke="#1F7A68" stroke-width="1.4" paint-order="stroke" font-family="Noto Sans TC,sans-serif">'+esc(PARK.name)+'</text>';
-    }
-    hs.slice().sort(function(a,b){return a.p[1]-b.p[1]}).forEach(function(h){
-      if(h.tree){g+=treeSvg(h.p[0],h.p[1],h.sz*.85);return}
-      var n=h.spot?(lit[h.id]||0):0;
-      if(h.spot&&!n) g+='<ellipse cx="'+f1(h.p[0])+'" cy="'+f1(h.p[1]+2)+'" rx="'+f1(h.sz*2.2)+'" ry="'+f1(h.sz*.9)+'" fill="#3D55D6" opacity=".55"/>';
-      g+='<g'+(h.spot?'':' opacity=".6"')+' class="house'+(h.spot?' spot':'')+(h.spot&&flick[h.id]!=null&&n===1?' litup':'')+'" data-id="'+(h.spot?h.id:'')+'">'+houseSvg(h,h.p[0],h.p[1],n,h.spot&&flick[h.id]!=null?flick[h.id]:-1)+'</g>';
-      var top=h.p[1]-h.h-h.sz*(h.roof==='gable'?.8:.3);
-      if(!catDone&&!h.spot&&h.roof==='gable'&&Math.abs(h.p[0])<40&&Math.abs(h.p[1])<30){catDone=true;
-        g+='<use href="#cat" x="'+f1(h.p[0]-3.5)+'" y="'+f1(top-6.5)+'" width="7" height="7" style="color:#141B5C"/>'}
-      if(h.spot){
-        top2+='<g class="house spot" data-id="'+h.id+'"><circle cx="'+f1(h.p[0]+h.sz*.4)+'" cy="'+f1(top-5)+'" r="4" fill="'+(n>=NW?'#FFD94D':'#2E4BE8')+'"/><text x="'+f1(h.p[0]+h.sz*.4)+'" y="'+f1(top-3.4)+'" text-anchor="middle" font-size="4.8" font-weight="900" fill="'+(n>=NW?'#2A2238':'#fff')+'" font-family="Noto Sans TC,sans-serif">'+h.no+'</text></g>';
-        top2+='<text x="'+f1(h.p[0])+'" y="'+f1(h.p[1]+6.5)+'" text-anchor="middle" font-size="4.2" font-weight="700" fill="#F3F1FA" stroke="#1E2A86" stroke-width="1.6" paint-order="stroke" font-family="Noto Sans TC,sans-serif">'+esc(h.name)+'</text>';
+  /* 地圖元件：建立一次 DOM，旋轉時只更新位置 */
+  function MapView(svg,compass){
+    var W=buildWorld(), items=[], labels=[], ground=null, objL=null, labL=null, meG=null, me=null, cw=1, ch=1, W0=1;
+    if(!VIEW.c)VIEW.c=W.c.slice();
+    function size(){var b=svg.getBoundingClientRect();cw=b.width||360;ch=b.height||400;
+      var bw=W.box[2]-W.box[0],bh=(W.box[3]-W.box[1])*TQ;W0=Math.max(bw,bh*cw/ch)*1.04}
+    function vbw(){return W0/VIEW.z}
+    function setVB(){var w=vbw(),h=w*ch/cw,p=pj(VIEW.c);svg.setAttribute('viewBox',f1(p[0]-w/2)+' '+f1(p[1]-h/2)+' '+f1(w)+' '+f1(h))}
+    function build(lit,flick){
+      lit=lit||{};flick=flick||{};items=[];labels=[];
+      var g='<g id="mground"><rect x="-3000" y="-3000" width="6000" height="6000" fill="#1E2A86"/>';
+      for(var i=-30;i<=30;i++) g+='<path d="M'+(i*50)+' -3000V3000M-3000 '+(i*50)+'H3000" stroke="#24319A" stroke-width="1"/>';
+      if(PARK){ // 湯德章紀念公園：外圈車道、圓形草地、四條步道通往中央廣場
+        var cx=PARK.c[0],cy=PARK.c[1],R=PARK.r;
+        g+='<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R+10)+'" fill="#3546B8"/><circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R+10)+'" fill="none" stroke="#5B74F0" stroke-width=".8" stroke-dasharray="4 5"/>';
+        g+='<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R+1.5)+'" fill="#7D8FE6"/><circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+R+'" fill="#1F7A68"/>';
+        for(var a=0;a<4;a++){var an=a*Math.PI/2+Math.PI/4;g+='<line x1="'+f1(cx+Math.cos(an)*R)+'" y1="'+f1(cy+Math.sin(an)*R)+'" x2="'+f1(cx)+'" y2="'+f1(cy)+'" stroke="#8FA0EA" stroke-width="5"/>'}
+        g+='<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R*.36)+'" fill="#26957E"/><circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R*.2)+'" fill="#8FA0EA"/><circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R*.11)+'" fill="#A9B6F2"/>';
       }
+      STREETS.forEach(function(st){var d='M'+st.pts.map(function(p){return f1(p[0])+' '+f1(p[1])}).join('L');g+='<path d="'+d+'" fill="none" stroke="#3546B8" stroke-width="'+st.w+'" stroke-linecap="round" stroke-linejoin="round"/>'});
+      if(ROUTE.length>1){var rd='M'+ROUTE.map(function(p){return f1(p[0])+' '+f1(p[1])}).join('L');
+        g+='<path d="'+rd+'" fill="none" stroke="#2D3CB2" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="'+rd+'" fill="none" stroke="#FFD94D" stroke-width="1.6" stroke-dasharray="4 5" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>'}
+      g+='</g><g id="mobj"></g><g id="mlab"></g><g id="mme"></g>';
+      svg.innerHTML=g;
+      ground=svg.querySelector('#mground');objL=svg.querySelector('#mobj');labL=svg.querySelector('#mlab');meG=svg.querySelector('#mme');
+      function add(w,html,layer,extra){var el=document.createElementNS('http://www.w3.org/2000/svg','g');el.innerHTML=html;(layer||objL).appendChild(el);var it={w:w,el:el};if(extra)for(var k in extra)it[k]=extra[k];(layer===labL?labels:items).push(it);return it}
+      if(PARK){
+        for(var t=0;t<22;t++){var an2=t/22*Math.PI*2+.07,rr2=PARK.r*(t%2?.8:.9);if(Math.abs(Math.sin(an2-Math.PI/4)*Math.cos(an2-Math.PI/4))<.08)continue;
+          add([PARK.c[0]+Math.cos(an2)*rr2,PARK.c[1]+Math.sin(an2)*rr2],treeSvg(0,0,t%3?4.6:5.6))}
+        // 中央：台座上的湯德章半身銅像
+        add(PARK.c,'<ellipse cx="0" cy=".6" rx="4.2" ry="1.6" fill="#6E7FD8"/><rect x="-2.4" y="-6" width="4.8" height="6.4" fill="#D9DEF5"/><rect x="-2.4" y="-6" width="1.4" height="6.4" fill="#BAC3EC"/><rect x="-3" y="-6.8" width="6" height="1" fill="#E8ECFA"/>'+
+          '<path d="M-2.6 -6.8Q0 -10.2 2.6 -6.8Z" fill="#B07A4E"/><circle cx="0" cy="-10.6" r="1.7" fill="#C58C5C"/><path d="M-1.7 -11A1.7 1.7 0 0 1 1.7 -11Z" fill="#8A5A38"/>');
+        add(PARK.c,'<text x="0" y="'+f1(PARK.r*TQ*.36+5)+'" text-anchor="middle" font-size="4.6" font-weight="700" fill="#E6FFF6" stroke="#1F7A68" stroke-width="1.4" paint-order="stroke" font-family="Noto Sans TC,sans-serif">'+esc(PARK.name)+'</text>',labL);
+      }
+      STREETS.forEach(function(st){var m=st.pts[Math.floor(st.pts.length/2)];
+        add(m,'<text x="0" y="1.6" text-anchor="middle" font-size="5" font-weight="700" fill="#B9C8FF" letter-spacing="2" font-family="Noto Sans TC,sans-serif">'+esc(st.name)+'</text>',labL,{a:st.pts[0],b:st.pts[st.pts.length-1]})});
+      var catDone=false;
+      W.hs.forEach(function(h){
+        if(h.tree){add(h.g,treeSvg(0,0,h.sz*.85));return}
+        var n=h.spot?(lit[h.id]||0):0, s='', top=-h.h-h.sz*(h.roof==='gable'?.8:.3);
+        if(h.spot&&!n) s+='<ellipse cx="0" cy="2" rx="'+f1(h.sz*2.2)+'" ry="'+f1(h.sz*.9)+'" fill="#3D55D6" opacity=".55"/>';
+        s+='<g'+(h.spot?'':' opacity=".6"')+' class="house'+(h.spot?' spot':'')+(h.spot&&flick[h.id]!=null&&n===1?' litup':'')+'" data-id="'+(h.spot?h.id:'')+'">'+houseSvg(h,0,0,n,h.spot&&flick[h.id]!=null?flick[h.id]:-1)+'</g>';
+        if(!catDone&&!h.spot&&h.roof==='gable'&&Math.hypot(h.g[0]-W.c[0],h.g[1]-W.c[1])<45){catDone=true;
+          s+='<use href="#cat" x="-3.5" y="'+f1(top-6.5)+'" width="7" height="7" style="color:#141B5C"/>'}
+        add(h.g,s);
+        if(h.spot) add(h.g,'<g class="house spot" data-id="'+h.id+'"><circle cx="'+f1(h.sz*.4)+'" cy="'+f1(top-5)+'" r="4" fill="'+(n>=NW?'#FFD94D':'#2E4BE8')+'"/><text x="'+f1(h.sz*.4)+'" y="'+f1(top-3.4)+'" text-anchor="middle" font-size="4.8" font-weight="900" fill="'+(n>=NW?'#2A2238':'#fff')+'" font-family="Noto Sans TC,sans-serif">'+h.no+'</text></g>'+
+          '<text x="0" y="6.5" text-anchor="middle" font-size="4.2" font-weight="700" fill="#F3F1FA" stroke="#1E2A86" stroke-width="1.6" paint-order="stroke" font-family="Noto Sans TC,sans-serif">'+esc(h.name)+'</text>',labL);
+      });
+      meG.innerHTML='<g id="medot" style="display:none"><circle r="12" fill="url(#mepool)"/><circle r="2.8" fill="#6FB6FF" stroke="#fff" stroke-width="1"/></g>';
+      me=meG.firstChild;
+      size();place();setMe();
+    }
+    function tr(el,p,extra){el.setAttribute('transform','translate('+f1(p[0])+' '+f1(p[1])+')'+(extra||''))}
+    var nPlace=0;
+    function place(lazy){
+      ground.setAttribute('transform','scale(1 '+TQ+') rotate('+f1(VIEW.th*180/Math.PI)+')');
+      items.forEach(function(it){it.p=pj(it.w);tr(it.el,it.p)});
+      // 依前後重新排列（只搬動順序有變的，轉動時比較順）
+      if(!lazy||++nPlace%8===0){var cur=objL.firstChild;items.slice().sort(function(a,b){return a.p[1]-b.p[1]}).forEach(function(it){if(it.el===cur)cur=cur.nextSibling;else objL.insertBefore(it.el,cur)})}
+      labels.forEach(function(it){var p=pj(it.w),ex='';
+        if(it.a){var A=pj(it.a),B=pj(it.b),ang=Math.atan2(B[1]-A[1],B[0]-A[0])*180/Math.PI;if(ang>90)ang-=180;if(ang<-90)ang+=180;ex=' rotate('+f1(ang)+')'}
+        tr(it.el,p,ex)});
+      if(compass)compass.style.transform='rotate('+f1(VIEW.th*180/Math.PI)+'deg)';
+      setMe();setVB();
+    }
+    function setMe(){if(!me)return;if(geo.lat==null){me.style.display='none';return}me.style.display='';tr(me,pj(xy(geo.lat,geo.lng)))}
+    /* 手勢：一指拖曳、雙指縮放與旋轉、滑鼠滾輪縮放（按住 Shift 拖曳可旋轉） */
+    var dirty=false, ptr={}, moved=0, rotSum=0, rotOn=false, raf=0, needPlace=false;
+    function local(e){var b=svg.getBoundingClientRect();return [e.clientX-b.left,e.clientY-b.top]}
+    function toWorld(s){var u=vbw()/cw,o=rot([(s[0]-cw/2)*u,(s[1]-ch/2)*u/TQ],-VIEW.th);return [VIEW.c[0]+o[0],VIEW.c[1]+o[1]]}
+    function pin(w,s){var u=vbw()/cw,o=rot([(s[0]-cw/2)*u,(s[1]-ch/2)*u/TQ],-VIEW.th);VIEW.c=[w[0]-o[0],w[1]-o[1]];
+      var d=Math.hypot(VIEW.c[0]-W.c[0],VIEW.c[1]-W.c[1]);if(d>W.R){VIEW.c=[W.c[0]+(VIEW.c[0]-W.c[0])*W.R/d,W.c[1]+(VIEW.c[1]-W.c[1])*W.R/d]}}
+    function zoomTo(z){VIEW.z=Math.max(.8,Math.min(5,z))}
+    function frame(){raf=0;if(needPlace){needPlace=false;dirty=true;place(true)}else setVB()}
+    function req(pl){if(pl)needPlace=true;if(!raf)raf=requestAnimationFrame(frame)}
+    function two(){var k=Object.keys(ptr);if(k.length<2)return null;var a=ptr[k[0]],b=ptr[k[1]];return {m:[(a[0]+b[0])/2,(a[1]+b[1])/2],d:Math.hypot(b[0]-a[0],b[1]-a[1]),a:Math.atan2(b[1]-a[1],b[0]-a[0])}}
+    svg.addEventListener('pointerdown',function(e){ptr[e.pointerId]=local(e);if(Object.keys(ptr).length===1){moved=0;rotSum=0;rotOn=false}});
+    svg.addEventListener('pointermove',function(e){
+      if(!ptr[e.pointerId])return;
+      var before=two(),old=ptr[e.pointerId],now=local(e);
+      if(!before){ // 一指：拖曳（Shift 拖曳：旋轉）
+        moved+=Math.hypot(now[0]-old[0],now[1]-old[1]);ptr[e.pointerId]=now;
+        if(e.shiftKey){VIEW.th+=(now[0]-old[0])*.01;req(true);return}
+        var w=toWorld(old);pin(w,now);req(false);return}
+      ptr[e.pointerId]=now;var after=two();moved+=99;
+      var w2=toWorld(before.m);
+      if(before.d>0)zoomTo(VIEW.z*after.d/before.d);
+      var da=after.a-before.a;if(da>Math.PI)da-=2*Math.PI;if(da<-Math.PI)da+=2*Math.PI;
+      rotSum+=da;if(!rotOn&&Math.abs(rotSum)>.15)rotOn=true;   // 轉超過約 9 度才開始旋轉，縮放時不會誤轉
+      if(rotOn){VIEW.th+=da;needPlace=true}
+      pin(w2,after.m);req(needPlace);
     });
-    g+=top2;
-    if(opts.me){var m2=pj(xy(opts.me[0],opts.me[1]));if(m2[0]>vb[0]-40&&m2[0]<vb[0]+vb[2]+40&&m2[1]>vb[1]-40&&m2[1]<vb[1]+vb[3]+40)
-      g+='<circle cx="'+f1(m2[0])+'" cy="'+f1(m2[1])+'" r="12" fill="url(#mepool)"/><circle cx="'+f1(m2[0])+'" cy="'+f1(m2[1])+'" r="2.8" fill="#6FB6FF" stroke="#fff" stroke-width="1"/>'}
-    return {svg:g,vb:vb};
+    function up(e){if(!ptr[e.pointerId])return;delete ptr[e.pointerId];if(!Object.keys(ptr).length&&dirty){dirty=false;place()}}
+    svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);svg.addEventListener('pointerleave',function(e){if(e.pointerType==='mouse')up(e)});
+    svg.addEventListener('wheel',function(e){e.preventDefault();var s=local(e),w=toWorld(s);zoomTo(VIEW.z*Math.exp(-e.deltaY*.0015));pin(w,s);req(false)},{passive:false});
+    svg.addEventListener('click',function(e){if(moved>8){e.stopPropagation();e.preventDefault()}},true);
+    window.addEventListener('resize',function(){if(svg.isConnected){size();setVB()}});
+    function north(){VIEW.th=0;place()}
+    function reset(){VIEW.th=0;VIEW.z=1;VIEW.c=W.c.slice();place()}
+    return {build:build,setMe:setMe,north:north,reset:reset,busy:function(){return Object.keys(ptr).length>0}};
   }
 
   /* ================= 上傳佇列（網路不好時先存手機，之後補傳） ================= */
@@ -322,8 +391,9 @@ footer.foot{text-align:center;color:var(--dim);font-size:12.5px}
   function removeQ(qid){memQ=memQ.filter(function(m){return m.qid!==qid});return tx('readwrite',function(s){return s.delete(qid)}).catch(function(){})}
   function send(body){return fetch(S.uploadUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)}).then(function(r){return r.json()}).then(function(j){if(!j||!j.ok)throw new Error((j&&j.error)||'fail');return j})}
   function setStatus(item,st){
-    var l=photos[item.spot]||[];l.forEach(function(p){if(p.id===item.body.phId)p.status=st});store('photos',photos);
-    if(st==='ok'){classCounts[item.spot]=(classCounts[item.spot]||0)+1;store('counts',classCounts)}
+    if(item.body.action!=='photo')return;   // 刪除的請求不用顯示狀態
+    var l=photos[item.spot]||[],found=false;l.forEach(function(p){if(p.id===item.body.phId){p.status=st;found=true}});store('photos',photos);
+    if(st==='ok'&&found){classCounts[item.spot]=(classCounts[item.spot]||0)+1;store('counts',classCounts)}
     if(hook)hook();
   }
   function flush(){
@@ -338,7 +408,7 @@ footer.foot{text-align:center;color:var(--dim);font-size:12.5px}
       })},Promise.resolve(false));
     }).catch(function(){}).then(function(){flushing=false;updatePending()});
   }
-  function updatePending(){allQueued().then(function(l){var n=$('pendN');if(n){n.hidden=!l.length;n.textContent=l.length}})}
+  function updatePending(){allQueued().then(function(l){l=l.filter(function(x){return x.body.action==='photo'});var n=$('pendN');if(n){n.hidden=!l.length;n.textContent=l.length}})}
   window.addEventListener('online',flush);
   setInterval(flush,45000);
   var hook=null;
@@ -373,6 +443,52 @@ footer.foot{text-align:center;color:var(--dim);font-size:12.5px}
     return '<div class="meter"><div class="t"><span>全班已點亮 <b id="mLit">'+t.lit+'</b> / '+t.all+' 扇窗</span><span id="mPct">'+pct+'%</span></div><div class="bar"><i id="mBar" style="width:'+pct+'%"></i></div></div>'}
   function updMeter(){var t=totals(),pct=t.all?Math.round(t.lit/t.all*100):0;if($('mLit')){$('mLit').textContent=t.lit;$('mPct').textContent=pct+'%';$('mBar').style.width=pct+'%'}}
 
+  /* ================= 照片：新增、換一張、刪除 ================= */
+  function dropQueued(pid){return allQueued().then(function(q){return Promise.all(q.filter(function(it){return it.body.action==='photo'&&it.body.phId===pid}).map(function(it){return removeQ(it.qid)}))})}
+  // 把舊照片從雲端撤下（已上傳或可能已上傳的才需要）
+  function unpublish(spot,p){
+    if(p.status==='ok'&&classCounts[spot]>0){classCounts[spot]--;store('counts',classCounts)}
+    return dropQueued(p.id).then(function(){
+      if(S.uploadUrl&&p.status!=='local'&&profile) return enqueue({spot:spot,body:{action:'delete',key:S.uploadKey,sid:profile.sid,phId:p.id}});
+    }).then(updatePending);
+  }
+  function removePhoto(spot,pid){
+    var l=photos[spot]||[],p=l.filter(function(x){return x.id===pid})[0];if(!p)return Promise.resolve();
+    photos[spot]=l.filter(function(x){return x.id!==pid});store('photos',photos);
+    return unpublish(spot,p);
+  }
+  // 存一張新照片；replaceId 有值時，換掉那一張（位置不變）
+  function savePhoto(spot,file,replaceId){
+    var s=P[spot];
+    return Promise.all([compress(file,1600,.82),compress(file,320,.7)]).then(function(out){
+      var l=photos[spot]=photos[spot]||[],ph={id:uid(),thumb:out[1],status:S.uploadUrl?'up':'local',ts:Date.now()},old=null,idx=-1;
+      if(replaceId){l.forEach(function(x,i){if(x.id===replaceId){old=x;idx=i}})}
+      if(old)l.splice(idx,1,ph);else l.push(ph);
+      if(!store('photos',photos)){if(old)l.splice(idx,1,old);else l.pop();throw new Error('手機空間不足，請先到「我的照片」補傳或刪掉幾張。')}
+      var job=old?unpublish(spot,old):Promise.resolve();
+      return job.then(function(){if(S.uploadUrl) return enqueue({spot:spot,body:{action:'photo',key:S.uploadKey,sid:profile.sid,name:profile.name,spot:spot,spotName:s.name,phId:ph.id,ts:ph.ts,image:out[0]}})}).then(function(){return ph});
+    });
+  }
+  // 點照片：看大一點、換一張或刪除
+  function editPhoto(spot,pid,done){
+    var p=(photos[spot]||[]).filter(function(x){return x.id===pid})[0];if(!p)return;
+    var sh=$('sheet'),del=$('shDel'),file=$('shFile'),armed=false;
+    $('shT').textContent=P[spot].name+' 的照片';$('shImg').src=p.thumb;
+    $('shTxt').textContent=statusTxt(p.status)+'。不滿意可以換一張，換照片不會少一扇窗。';
+    del.textContent='刪除這張';sh.hidden=false;
+    function close(){sh.hidden=true;del.onclick=null;file.onchange=null;$('shX').onclick=null;sh.onclick=null}
+    $('shX').onclick=close;
+    sh.onclick=function(e){if(e.target===sh)close()};
+    del.onclick=function(){
+      if(!armed){armed=true;del.textContent='確定要刪除？再按一次';return}
+      close();removePhoto(spot,pid).then(function(){toast('照片刪掉了');if(done)done()});
+    };
+    file.onchange=function(){var f=file.files[0];file.value='';if(!f)return;close();
+      savePhoto(spot,f,pid).then(function(){toast('照片換好了！');if(done)done()}).catch(function(e){toast(e.message)})};
+  }
+  function thumbHtml(spot,p){return '<div class="th"><button type="button" data-ed="'+p.id+'" data-sp="'+spot+'" aria-label="編輯這張照片"><img src="'+p.thumb+'" alt="'+esc(P[spot].name)+' 的照片"></button><span class="st '+p.status+'" data-ps="'+p.id+'">'+statusTxt(p.status)+'</span><span class="ed">編輯</span></div>'}
+  function bindEdit(root,done){root.querySelectorAll('[data-ed]').forEach(function(b){b.addEventListener('click',function(){editPhoto(b.getAttribute('data-sp'),b.getAttribute('data-ed'),done)})})}
+
   /* ================= 頁面 ================= */
   function pageHome(){
     var h='<div class="wrap"><div class="kv">'+archScene([2,0,6,3,0],false)+'</div>'+
@@ -401,26 +517,31 @@ footer.foot{text-align:center;color:var(--dim);font-size:12.5px}
 
   function winsIcon(n){var s='<span class="wins" aria-hidden="true">';for(var i=0;i<NW;i++)s+='<i'+(i<n?' class="on"':'')+'></i>';return s+'</span>'}
   function pageMap(){
-    var h='<div class="mapbox"><svg id="map" role="img" aria-label="走讀地圖，上方是北"></svg>'+
+    var h='<div class="mapbox"><svg id="map" role="img" aria-label="走讀地圖，可以拖曳、縮放、用兩指旋轉"></svg>'+
       '<div class="mtop"><span class="chip"><i></i>每張照片點亮一扇窗</span><span class="chip"><span class="me"></span><span id="meTxt">定位中…</span></span></div>'+
-      '<svg class="north" viewBox="-20 -20 40 40" aria-hidden="true"><circle r="18" fill="rgba(20,27,92,.85)"/><path d="M0 -13 L6 4 L0 1 L-6 4 Z" fill="#FFD94D"/><text y="14" text-anchor="middle" font-size="9" font-weight="900" fill="#fff">N</text></svg></div>'+
+      '<div class="mctl"><button type="button" id="mNorth" aria-label="轉回北方朝上"><svg viewBox="-20 -20 40 40" aria-hidden="true"><g id="needle"><path d="M0 -14 L6 3 L0 0 L-6 3 Z" fill="#FFD94D"/><path d="M0 14 L6 3 L0 0 L-6 3 Z" fill="#8C9AE8"/><text y="-15.5" text-anchor="middle" font-size="7" font-weight="900" fill="#fff" font-family="sans-serif">N</text></g></svg></button>'+
+      '<button type="button" id="mAll" aria-label="回到整張地圖"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>'+
       '<div class="wrap" style="padding-top:14px">'+meterHtml()+
-      '<p class="small">黃色虛線是走讀路線，藍點是你的位置。點房子或下面的地點，拍下你注意到的細節。</p>'+
+      '<p class="small">黃色虛線是走讀路線，藍點是你的位置。地圖可以拖曳、兩指縮放，兩指轉動就能旋轉，按右下角的指北針轉回北方朝上。點房子或下面的地點，拍下你注意到的細節。</p>'+
       '<div class="spotlist" id="spotlist"></div>'+
-      '<footer class="foot">地圖依真實座標繪製，方向與 Google 地圖相同</footer></div>';
+      '<footer class="foot">地圖依真實座標繪製，預設方向與 Google 地圖相同（上方是北）</footer></div>';
     app.innerHTML=h;
-    var svg=$('map');
+    var svg=$('map'), mv=MapView(svg,$('needle')), later=false;
+    $('needle').style.transformOrigin='0 0';
     function draw(){
+      if(mv.busy()){later=true;return}
       var lit={};SP.forEach(function(s){lit[s.id]=litOf(s.id)});
-      var m=mapSvg({lit:lit,me:geo.lat!=null?[geo.lat,geo.lng]:null});
-      svg.setAttribute('viewBox',m.vb.map(f1).join(' '));svg.innerHTML=m.svg;
+      mv.build(lit);
       $('spotlist').innerHTML=SP.map(function(s,i){var n=Math.min(NW,litOf(s.id)),mine=(photos[s.id]||[]).length;
         return '<a class="spotrow" href="#'+s.id+'"><span class="no">'+(i+1)+'</span><span class="t"><b>'+esc(s.name)+'</b><span>我拍了 '+mine+' 張'+(n>=NW?'・整間亮了！':'')+(s.status==='draft'?'・待確認':'')+'</span></span>'+winsIcon(n)+'</a>'}).join('');
       $('meTxt').textContent=geo.lat!=null?'你的位置':'未開啟定位';updMeter();
     }
     svg.addEventListener('click',function(e){var g=e.target.closest('.spot');if(g&&g.getAttribute('data-id'))location.hash=g.getAttribute('data-id')});
+    svg.addEventListener('pointerup',function(){if(later&&!mv.busy()){later=false;setTimeout(draw,50)}});
+    $('mNorth').addEventListener('click',mv.north);
+    $('mAll').addEventListener('click',mv.reset);
     draw();hook=draw;
-    startGeo(function(){if(location.hash==='#map')draw()});
+    startGeo(function(){if(location.hash==='#map'){mv.setMe();$('meTxt').textContent='你的位置'}});
     setTimeout(function(){if(geo.lat==null&&$('meTxt'))$('meTxt').textContent='未開啟定位'},8000);
     fetchCounts();
   }
@@ -441,38 +562,33 @@ footer.foot{text-align:center;color:var(--dim);font-size:12.5px}
       ((s.tasks&&s.tasks.length)?'<div style="display:grid;gap:8px"><div class="small">找找看，拍下來：</div><div class="tasks">'+s.tasks.map(function(t){return '<span>'+esc(t)+'</span>'}).join('')+'</div></div>':'')+
       '<a class="small" style="color:var(--glow)" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+s.lat+','+s.lng+'">在 Google 地圖開啟</a>'+
       '<div class="card"><h3>拍一張，亮一窗</h3>'+
-      (profile?'<p class="small">每上傳一張照片，這間房子就亮一扇窗（每人最多 '+S.maxPhotos+' 張）。'+(S.uploadUrl?'網路不好時會先存在手機，之後自動補傳。':'提醒：還沒設定上傳網址，照片目前只存在這支手機。')+'</p>'+
-        '<div class="thumbs" id="thumbs"></div><input type="file" id="ph" accept="image/*" multiple hidden><div class="msg" id="phmsg" hidden></div>'
+      (profile?'<p class="small">每上傳一張照片，這間房子就亮一扇窗（每人在這一站最多 '+S.maxPhotos+' 張，全班不限張數）。'+(S.uploadUrl?'網路不好時會先存在手機，之後自動補傳。':'提醒：還沒設定上傳網址，照片目前只存在這支手機。')+'</p>'+
+        '<div class="thumbs" id="thumbs"></div><p class="small" id="phmax" style="margin:0"></p><input type="file" id="ph" accept="image/*" multiple hidden><div class="msg" id="phmsg" hidden></div>'
       :'<p class="small">要先在首頁寫下學號和姓名，才能上傳照片。</p><a class="btn ghost" href="#">回首頁填寫</a>')+'</div>'+
       '<div class="pager">'+(i>0?'<a class="btn ghost" href="#'+SP[i-1].id+'">← 上一站</a>':'<span></span>')+(i<SP.length-1?'<a class="btn ghost" href="#'+SP[i+1].id+'">下一站 →</a>':'<a class="btn" href="#map">回地圖 →</a>')+'</div>'+
       '</div>';
     app.innerHTML=h;
     function hero(flickIdx){var n=litOf(id);$('hero').innerHTML=heroSvg(id,n,flickIdx==null?-1:flickIdx);
-      $('litline').innerHTML=n>=NW?'這間房子<b>整間亮了！</b>全班在這裡拍了 '+n+' 張':'這間房子亮了 <b>'+Math.min(n,NW)+'</b> / '+NW+' 扇窗';}
+      $('litline').innerHTML=(n>=NW?'這間房子<b>整間亮了！</b>':'這間房子亮了 <b>'+n+'</b> / '+NW+' 扇窗')+(n?'・全班在這裡拍了 '+n+' 張':'');}
     hero();
     hook=function(){hero();if($('thumbs'))thumbs()};
     fetchCounts();
     if(!profile)return;
     function thumbs(){
-      var l=photos[id]||[],t=l.map(function(p){return '<div class="th"><img src="'+p.thumb+'" alt="'+esc(s.name)+' 的照片"><span class="st '+p.status+'">'+statusTxt(p.status)+'</span>'+(p.status==='ok'?'':'<button type="button" class="x" data-x="'+p.id+'" aria-label="刪除這張">×</button>')+'</div>'}).join('');
+      var l=photos[id]||[],t=l.map(function(p){return thumbHtml(id,p)}).join('');
       if(l.length<S.maxPhotos)t+='<label class="addph" for="ph"><span><b>＋</b>拍一張<br>亮一窗</span></label>';
       $('thumbs').innerHTML=t;
-      $('thumbs').querySelectorAll('[data-x]').forEach(function(b){b.addEventListener('click',function(){
-        var pid=b.getAttribute('data-x');photos[id]=(photos[id]||[]).filter(function(p){return p.id!==pid});store('photos',photos);
-        allQueued().then(function(q){q.forEach(function(it){if(it.body.phId===pid)removeQ(it.qid)})}).then(updatePending);thumbs();hero()})});
+      bindEdit($('thumbs'),function(){thumbs();hero()});
+      $('phmax').textContent=l.length>=S.maxPhotos?'這一站已經拍滿 '+S.maxPhotos+' 張。不滿意的話，點照片就可以換一張或刪除。':'點照片可以換一張或刪除。';
     }
     thumbs();
     $('ph').addEventListener('change',function(){
       var l=photos[id]=photos[id]||[],room=S.maxPhotos-l.length,arr=Array.prototype.slice.call(this.files,0,Math.max(0,room));this.value='';
-      if(!arr.length){$('phmsg').textContent='每人在這一站最多 '+S.maxPhotos+' 張照片。';$('phmsg').hidden=false;return}
+      if(!arr.length){$('phmsg').textContent='每人在這一站最多 '+S.maxPhotos+' 張照片，可以點照片換一張。';$('phmsg').hidden=false;return}
       $('phmsg').hidden=true;
-      arr.reduce(function(p,f){return p.then(function(){return Promise.all([compress(f,1600,.82),compress(f,320,.7)]).then(function(out){
-        var before=litOf(id);
-        var ph={id:uid(),thumb:out[1],status:S.uploadUrl?'up':'local',ts:Date.now()};l.push(ph);
-        if(!store('photos',photos)){l.pop();throw new Error('手機空間不足，請先到「我的照片」補傳或刪掉幾張。')}
+      arr.reduce(function(p,f){return p.then(function(){var before=litOf(id);return savePhoto(id,f).then(function(){
         thumbs();hero(before<NW?before:-1);
         toast(before+1>=NW&&before<NW?'整間房子都亮了！':'你點亮了一扇窗！');
-        if(S.uploadUrl) return enqueue({spot:id,body:{action:'photo',key:S.uploadKey,sid:profile.sid,name:profile.name,spot:id,spotName:s.name,phId:ph.id,ts:ph.ts,image:out[0]}});
       })})},Promise.resolve()).catch(function(e){$('phmsg').textContent=e.message;$('phmsg').hidden=false});
     });
   }
@@ -481,12 +597,13 @@ footer.foot{text-align:center;color:var(--dim);font-size:12.5px}
     if(!profile){app.innerHTML='<div class="wrap"><div class="card"><h3>要先寫下學號和姓名</h3><a class="btn" href="#">回首頁</a></div></div>';return}
     var total=0;SP.forEach(function(s){total+=(photos[s.id]||[]).length});
     var h='<div class="wrap"><div style="display:grid;gap:6px"><div class="eyebrow">我的照片</div><h2>'+esc(profile.name)+' 點亮了 '+total+' 扇窗</h2>'+
-      '<p class="lead">'+(S.uploadUrl?'「已上傳」的照片已經存進計畫的雲端資料夾；「等待補傳」會在網路恢復後自動上傳，請不要清除瀏覽紀錄。':'還沒設定上傳網址，照片目前只存在這支手機。')+'</p></div>'+
+      '<p class="lead">'+(S.uploadUrl?'「已上傳」的照片已經存進計畫的雲端資料夾；「等待補傳」會在網路恢復後自動上傳，請不要清除瀏覽紀錄。':'還沒設定上傳網址，照片目前只存在這支手機。')+'點照片可以換一張或刪除。</p></div>'+
       (S.uploadUrl?'<div><button class="btn ghost" type="button" id="retry">立刻補傳</button> <span class="small" id="qn"></span></div>':'')+
-      SP.map(function(s,i){var l=photos[s.id]||[];return '<div class="card"><h3>'+(i+1)+'. '+esc(s.name)+'</h3>'+(l.length?'<div class="thumbs">'+l.map(function(p){return '<div class="th"><img src="'+p.thumb+'" alt=""><span class="st '+p.status+'" data-ps="'+p.id+'">'+statusTxt(p.status)+'</span></div>'}).join('')+'</div>':'<p class="small">這一站還沒有照片。<a href="#'+s.id+'">去拍照</a></p>')+'</div>'}).join('')+
+      SP.map(function(s,i){var l=photos[s.id]||[];return '<div class="card"><h3>'+(i+1)+'. '+esc(s.name)+'</h3>'+(l.length?'<div class="thumbs">'+l.map(function(p){return thumbHtml(s.id,p)}).join('')+'</div>':'<p class="small">這一站還沒有照片。<a href="#'+s.id+'">去拍照</a></p>')+'</div>'}).join('')+
       '</div>';
     app.innerHTML=h;
-    function upd(){allQueued().then(function(l){var q=$('qn');if(q)q.textContent=l.length?'還有 '+l.length+' 張等待上傳':'全部都上傳了'})}
+    bindEdit(app,function(){render()});
+    function upd(){allQueued().then(function(l){l=l.filter(function(x){return x.body.action==='photo'});var q=$('qn');if(q)q.textContent=l.length?'還有 '+l.length+' 張等待上傳':'全部都上傳了'})}
     hook=function(){SP.forEach(function(s){(photos[s.id]||[]).forEach(function(p){var el=document.querySelector('[data-ps="'+p.id+'"]');if(el){el.textContent=statusTxt(p.status);el.className='st '+p.status}})});upd()};
     upd();
     var r=$('retry');if(r)r.addEventListener('click',function(){flush();setTimeout(upd,1500)});
@@ -495,7 +612,7 @@ footer.foot{text-align:center;color:var(--dim);font-size:12.5px}
   /* ================= 路由 ================= */
   function render(){
     var r=(location.hash||'').replace('#','');
-    hook=null;
+    hook=null;$('sheet').hidden=true;
     if(r!=='map')stopGeo();
     $('nav').hidden=!profile||r==='';
     document.querySelectorAll('#nav a').forEach(function(a){if(a.getAttribute('data-r')===r)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
