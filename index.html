@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#141B5C">
+<title>巷仔內的光</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<style>
+/* 寶藍色的夜：沒人拍的房子融在夜色裡；每上傳一張照片，那間房子就亮一扇窗，第一扇亮起時整間換上粉彩色。扁平色塊，不用外框線。 */
+:root{
+  --panel:rgba(30,42,134,.9);--panel2:rgba(20,27,92,.92);--edge:#7F95F0;--ink:#F3F1FA;--muted:#BFC5E6;--dim:#9AA6DA;
+  --glow:#FFD94D;--glow-ink:#2A2238;--plate:#2E4BE8;--pink:#F27FC4;--mint:#4FE0B5;--err:#FF9C8A;--ok:#9FE0B8;
+  --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;--serif:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  color-scheme:dark
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;color:var(--ink);font-family:var(--font);font-size:15.5px;line-height:1.7;
+  background:linear-gradient(#141B5C 0%,#1E2A86 45%,#2B3FB8 85%,#3D55D6 100%) fixed,#1E2A86;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+button,input{font:inherit;color:inherit}
+a{color:var(--glow)}
+:focus-visible{outline:2px solid var(--glow);outline-offset:2px}
+img{max-width:100%}
+.wrap{max-width:600px;margin:0 auto;padding:20px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px));display:grid;gap:18px}
+h1,h2,h3{font-family:var(--serif);font-weight:900;margin:0;line-height:1.3;text-wrap:balance}
+h1{font-size:clamp(30px,8.5vw,44px);color:#FFF4DC;text-shadow:0 0 18px rgba(255,217,77,.3)}
+h2{font-size:24px;color:#FFF4DC}
+h3{font-size:18px}
+.eyebrow{font-size:13px;letter-spacing:.3em;color:var(--muted)}
+.lead{margin:0;color:var(--muted)}
+.small{font-size:13px;color:var(--muted);margin:0}
+.card{background:var(--panel);border-radius:12px;padding:16px;display:grid;gap:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;padding:13px 18px;font-weight:900;cursor:pointer;background:var(--glow);color:var(--glow-ink);font-size:17px;letter-spacing:.12em;text-decoration:none;text-align:center}
+.btn.block{width:100%}
+.btn.ghost{background:rgba(255,255,255,.08);color:var(--ink);font-size:15px;letter-spacing:.06em;font-weight:700}
+.row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.field{display:grid;gap:6px}
+.field>label{font-weight:700;font-size:14.5px}
+input[type=text]{width:100%;padding:10px 12px;border:0;border-radius:10px;background:rgba(255,255,255,.1)}
+input::placeholder{color:#9AA6DA}
+input[type=text]:focus{outline:2px solid var(--glow)}
+.tag{display:inline-block;font-size:12px;font-weight:700;border-radius:99px;padding:0 10px;background:rgba(255,217,77,.16);color:var(--glow)}
+.msg{padding:8px 12px;font-size:14px;border-radius:10px;background:rgba(255,120,100,.15);color:var(--err)}
+.back{display:inline-flex;gap:6px;align-items:center;color:var(--muted);text-decoration:none;font-size:14px}
+.nav{position:sticky;top:0;z-index:20;background:rgba(20,27,92,.94);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.nav .in{max-width:600px;margin:0 auto;display:flex;gap:4px;padding:6px max(10px,env(safe-area-inset-right,0px)) 6px max(10px,env(safe-area-inset-left,0px))}
+.nav a{flex:1;text-align:center;text-decoration:none;color:var(--muted);font-size:14px;padding:6px 10px;border-radius:10px;font-weight:700;white-space:nowrap}
+.nav a[aria-current=page]{background:rgba(255,217,77,.16);color:var(--glow)}
+.nav a .n{display:inline-block;min-width:18px;border-radius:9px;background:var(--glow);color:var(--glow-ink);font-size:11px;padding:0 5px;margin-left:4px}
+footer.foot{text-align:center;color:var(--dim);font-size:12.5px}
+.kv{margin:0 auto;width:min(100%,420px)}
+.kv svg{display:block;width:100%;height:auto}
+.date{display:inline-block;background:var(--glow);color:var(--glow-ink);font-weight:900;border-radius:99px;padding:2px 14px;font-size:14px}
+
+/* progress of the whole alley */
+.meter{display:grid;gap:6px}
+.meter .bar{height:12px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden}
+.meter .bar i{display:block;height:100%;background:linear-gradient(90deg,#F27FC4,#FFD94D);border-radius:6px;transition:width .8s}
+.meter .t{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.meter .t b{color:var(--glow);font-size:16px}
+
+/* map */
+.mapbox{position:relative;height:min(64vh,540px);min-height:340px;background:#18227A;overflow:hidden}
+.mapbox svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.mapbox .mtop{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;gap:8px;pointer-events:none;flex-wrap:wrap}
+.chip{background:var(--panel2);border-radius:99px;padding:3px 12px;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+.chip i{width:10px;height:8px;background:var(--glow);display:inline-block;border-radius:1px}
+.chip .me{width:10px;height:10px;border-radius:50%;background:#6FB6FF}
+.mapbox .north{position:absolute;top:auto;left:auto;right:10px;bottom:10px;width:34px;height:34px;pointer-events:none}
+.house{cursor:pointer}
+.spotlist{display:grid;gap:8px}
+.spotrow{display:flex;align-items:center;gap:12px;background:var(--panel);border-radius:12px;padding:10px 12px;text-decoration:none;color:var(--ink)}
+.spotrow .no{flex:none;width:30px;height:30px;border-radius:50%;background:var(--plate);display:grid;place-items:center;font-weight:900;font-size:14px}
+.spotrow .t{flex:1;min-width:0}
+.spotrow .t b{display:block;font-family:var(--serif)}
+.spotrow .t span{font-size:12.5px;color:var(--muted)}
+.wins{flex:none;display:grid;grid-template-columns:repeat(3,9px);gap:3px}
+.wins i{width:9px;height:8px;background:#1A2266;border-radius:1px}
+.wins i.on{background:var(--glow);box-shadow:0 0 6px rgba(255,217,77,.8)}
+
+/* spot */
+.househero{margin:0 auto;width:min(100%,360px)}
+.househero svg{display:block;width:100%;height:auto}
+.litline{text-align:center;font-size:15px}
+.litline b{color:var(--glow);font-size:22px;font-family:var(--serif)}
+.tasks{display:flex;flex-wrap:wrap;gap:8px}
+.tasks span{background:rgba(79,224,181,.14);color:var(--mint);border-radius:99px;padding:3px 12px;font-size:13.5px}
+.spotimg{border-radius:10px;width:100%;display:block}
+.thumbs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.th{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#1A2266}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th .st{position:absolute;left:4px;bottom:4px;font-size:11px;font-weight:700;border-radius:99px;padding:0 7px;background:rgba(20,27,92,.88)}
+.th .st.ok{color:var(--ok)}.th .st.wait{color:var(--glow)}.th .st.up{color:#fff}.th .st.local{color:var(--muted)}
+.th .x{position:absolute;right:3px;top:3px;width:26px;height:26px;border-radius:50%;border:0;background:rgba(20,27,92,.88);color:#fff;cursor:pointer;font-size:15px;line-height:26px;padding:0}
+.addph{aspect-ratio:1;border-radius:8px;display:grid;place-items:center;text-align:center;font-size:13px;color:var(--glow-ink);cursor:pointer;background:var(--glow);font-weight:700;line-height:1.4}
+.addph b{display:block;font-size:26px;line-height:1}
+.pager{display:flex;justify-content:space-between;gap:10px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--glow);color:var(--glow-ink);font-weight:900;border-radius:99px;padding:10px 20px;opacity:0;transition:opacity .3s,transform .3s;z-index:60;white-space:nowrap;pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.win-flick{animation:flick 1.4s steps(1) 1}
+@keyframes flick{0%{opacity:.15}12%{opacity:1}24%{opacity:.2}36%,100%{opacity:1}}
+.litup{animation:litup 1.8s ease-out}
+@keyframes litup{0%{filter:brightness(.3) saturate(.2)}20%{filter:brightness(1.35)}30%{filter:brightness(.45)}55%,100%{filter:none}}
+
+/* loading */
+#loader{position:fixed;inset:0;z-index:100;display:grid;place-items:center;align-content:center;gap:14px;text-align:center;padding:24px;background:linear-gradient(#141B5C,#1E2A86 60%,#2B3FB8);transition:opacity .6s,visibility .6s;cursor:pointer}
+#loader.done{opacity:0;visibility:hidden}
+#loader .arch{width:min(70vw,320px)}
+#loader .arch svg{display:block;width:100%;height:auto}
+#loader .lt{font-family:var(--serif);font-weight:900;font-size:clamp(26px,7vw,40px);color:#FFF4DC;letter-spacing:.08em}
+#loader .ls{color:var(--muted);font-size:14px;letter-spacing:.12em}
+#loader .bar{width:min(60vw,240px);height:4px;border-radius:2px;background:rgba(255,255,255,.15);overflow:hidden}
+#loader .bar i{display:block;height:100%;width:0;background:var(--glow);animation:ldbar 2.2s ease-out forwards}
+@keyframes ldbar{to{width:100%}}
+.ld-lit{opacity:0;animation:ldon .5s ease-out forwards}
+@keyframes ldon{0%{opacity:0}40%{opacity:1}55%{opacity:.3}100%{opacity:1}}
+@media (max-width:420px){.row2{grid-template-columns:minmax(0,1fr)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.ld-lit{opacity:1}#loader .bar i{width:100%}}
+</style>
+</head>
+<body>
+<div id="loader" role="status" aria-label="載入中"><div class="arch" id="ldArt"></div><div class="lt" id="ldTitle">巷仔內的光</div><div class="ls">巷子裡的燈，一盞一盞亮起來…</div><div class="bar"><i></i></div></div>
+<nav class="nav" id="nav" hidden><div class="in">
+  <a href="#map" data-r="map">走讀地圖</a><a href="#folder" data-r="folder">我的照片<span class="n" id="pendN" hidden></span></a>
+</div></nav>
+<main id="app"></main>
+<div class="toast" id="toast" role="status"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="cat" viewBox="0 0 100 100">
+      <path d="M68 90 C92 90 98 66 84 56" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+      <path d="M28 94 C24 72 33 54 50 54 C67 54 76 72 72 94 Z" fill="currentColor"/>
+      <path d="M33 34 L31 12 L45 24 Z M67 34 L69 12 L55 24 Z" fill="currentColor"/>
+      <circle cx="50" cy="40" r="18" fill="currentColor"/>
+      <ellipse cx="43" cy="40" rx="3" ry="4" fill="#FFD94D"/><ellipse cx="57" cy="40" rx="3" ry="4" fill="#FFD94D"/>
+    </symbol>
+    <radialGradient id="pool"><stop offset="0" stop-color="#FFD94D" stop-opacity=".45"/><stop offset="1" stop-color="#FFD94D" stop-opacity="0"/></radialGradient>
+    <radialGradient id="mepool"><stop offset="0" stop-color="#6FB6FF" stop-opacity=".5"/><stop offset="1" stop-color="#6FB6FF" stop-opacity="0"/></radialGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="1.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+</svg>
+
+<script src="data.js"></script>
+<script>
+(function(){
+  'use strict';
+  var S=window.SITE||{}, SP=S.spots||[], P={}, NW=S.windows||6;
+  SP.forEach(function(s){P[s.id]=s});
+  var app=document.getElementById('app');
+  function $(id){return document.getElementById(id)}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function K(k){return 'yintong-'+k}
+  function load(k,d){try{var v=JSON.parse(localStorage.getItem(K(k)));return v==null?d:v}catch(e){return d}}
+  function store(k,v){try{localStorage.setItem(K(k),JSON.stringify(v));return true}catch(e){return false}}
+  function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+  function rand(seed){return function(){seed=(seed*9301+49297)%233280;return seed/233280}}
+  function hash(s){var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0)/4294967295}
+  function f1(v){return v.toFixed(1)}
+  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.title=S.title||document.title;
+
+  var profile=load('profile',null), photos=load('photos',{}), classCounts=load('counts',{});
+
+  /* 每個地點亮了幾扇窗：全班已上傳的張數＋自己還在手機裡、還沒傳上去的張數 */
+  function litOf(id){
+    var mine=(photos[id]||[]), pend=mine.filter(function(p){return p.status!=='ok'}).length;
+    var base=S.uploadUrl?(classCounts[id]||0):0;
+    if(!S.uploadUrl) return mine.length;
+    return Math.max(base+pend, mine.length);
+  }
+  function totals(){var t=0;SP.forEach(function(s){t+=Math.min(NW,litOf(s.id))});return {lit:t,all:SP.length*NW}}
+
+  /* ================= 小屋（扁平色塊） ================= */
+  var LIT=[{w:'#F6D6E4',s:'#E2B3CB',r:'#3D5BF0'},{w:'#C9B4F2',s:'#A992DB',r:'#7B5CE0'},{w:'#FFD26B',s:'#F0B848',r:'#3D5BF0'},{w:'#F7B8D8',s:'#E393BE',r:'#5B8DF2'},{w:'#FFE3C9',s:'#F1C7A6',r:'#F27FC4'},{w:'#B9C8FF',s:'#93A6F2',r:'#7B5CE0'}];
+  var DIM={w:'#2C3794',s:'#222C7C',r:'#1A2367',win:'#1A2266',door:'#252F85'};
+  function winRect(x,y,w,h,on,fl){
+    return '<rect x="'+f1(x)+'" y="'+f1(y)+'" width="'+f1(w)+'" height="'+f1(h)+'" fill="'+(on?'#FFE066':DIM.win)+'"'+(on?' filter="url(#glow)"':'')+(on&&fl?' class="win-flick"':'')+'/>'+
+      '<rect x="'+f1(x+w/2-.18)+'" y="'+f1(y)+'" width=".36" height="'+f1(h)+'" fill="'+(on?'#F4B63A':'#2B3592')+'"/><rect x="'+f1(x)+'" y="'+f1(y+h/2-.18)+'" width="'+f1(w)+'" height=".36" fill="'+(on?'#F4B63A':'#2B3592')+'"/>';
+  }
+  /* litN：亮幾扇窗；flickIdx：剛亮起的那扇窗（閃一下） */
+  function houseSvg(h,X,Y,litN,flickIdx){
+    var k=Math.floor(hash(String(h.id))*1000), lit=litN>0, Pc=lit?LIT[k%LIT.length]:{w:DIM.w,s:DIM.s,r:DIM.r};
+    var sz=h.sz,H=h.h,dx=sz*.6,dy=sz*.5,L=X-sz,R=X+sz,T=Y-H,s='';
+    if(lit) s+='<ellipse cx="'+f1(X)+'" cy="'+f1(Y+3)+'" rx="'+f1(sz*(2.4+Math.min(litN,NW)/NW))+'" ry="'+f1(sz*1.2)+'" fill="url(#pool)"/>';
+    s+='<path d="M'+R+' '+T+'L'+(R+dx)+' '+(T-dy)+'V'+(Y-dy)+'L'+R+' '+Y+'Z" fill="'+Pc.s+'"/>';
+    s+='<rect x="'+L+'" y="'+T+'" width="'+(2*sz)+'" height="'+H+'" fill="'+Pc.w+'"/>';
+    if(k%3===0) s+='<rect x="'+f1(X+sz*.35)+'" y="'+f1(T-sz*.95)+'" width="'+f1(sz*.28)+'" height="'+f1(sz*.6)+'" fill="'+(lit?'#1B2A8A':DIM.r)+'"/>';
+    if(h.roof==='gable'){
+      var rh=sz*.8;
+      s+='<path d="M'+X+' '+f1(T-rh)+'L'+f1(X+dx)+' '+f1(T-rh-dy)+'L'+f1(R+1.2+dx)+' '+f1(T-dy+.4)+'L'+(R+1.2)+' '+(T+.4)+'Z" fill="'+Pc.r+'"/>';
+      s+='<path d="M'+(L-1.2)+' '+(T+.4)+'L'+X+' '+f1(T-rh)+'L'+(R+1.2)+' '+(T+.4)+'Z" fill="'+Pc.r+'"/>';
+      s+='<path d="M'+(L+.4)+' '+(T+.4)+'L'+X+' '+f1(T-rh+1.1)+'L'+(R-.4)+' '+(T+.4)+'Z" fill="'+Pc.w+'"/>';
+      s+='<circle cx="'+X+'" cy="'+f1(T-rh*.32)+'" r="'+f1(sz*.17)+'" fill="'+(litN>=NW?'#FFE066':DIM.win)+'"/>';
+    }else{
+      s+='<path d="M'+(L-.6)+' '+T+'L'+(L-.6+dx)+' '+(T-dy)+'H'+(R+.6+dx)+'L'+(R+.6)+' '+T+'Z" fill="'+Pc.r+'"/>';
+      s+='<rect x="'+(L-.6)+'" y="'+(T-.2)+'" width="'+(2*sz+1.2)+'" height="1.1" fill="'+(lit?'#1B2A8A':DIM.r)+'"/>';
+    }
+    var cols=h.cols||2, rows=h.rows||(H>9?2:1), pad=sz*.2, gap=sz*.16, ww=(2*sz-pad*2-gap*(cols-1))/cols;
+    var wh=rows===2?H*.22:Math.min(H*.3,sz*.58), ys=rows===2?[.42,.12]:[.24], n=0;
+    ys.forEach(function(fy){for(var c=0;c<cols;c++){ // 亮窗順序：下排由左到右，再上排
+      s+=winRect(L+pad+c*(ww+gap),T+H*fy,ww,wh,n<litN,n===flickIdx);n++}});
+    var dw=sz*.42, dh=H*(rows===1?.5:.3);
+    s+='<rect x="'+f1(X-dw/2)+'" y="'+f1(Y-dh)+'" width="'+f1(dw)+'" height="'+f1(dh)+'" fill="'+(lit?'#F27FC4':DIM.door)+'"/>';
+    s+='<rect x="'+f1(X-dw/2-.6)+'" y="'+f1(Y-.7)+'" width="'+f1(dw+1.2)+'" height=".7" fill="'+(lit?'#1B2A8A':DIM.r)+'"/>';
+    s+='<circle cx="'+f1(L+.6)+'" cy="'+f1(Y-.8)+'" r="1.3" fill="'+(lit?'#4FE0B5':'#1F6E78')+'"/><circle cx="'+f1(L+2)+'" cy="'+f1(Y-.6)+'" r=".9" fill="'+(lit?'#3CC79E':'#1A5F6A')+'"/>';
+    return s;
+  }
+  function treeSvg(X,Y,sz){
+    return '<rect x="'+f1(X-.5)+'" y="'+f1(Y-sz*1.2)+'" width="1" height="'+f1(sz*1.2)+'" fill="#1A2367"/>'+
+      '<circle cx="'+f1(X)+'" cy="'+f1(Y-sz*1.55)+'" r="'+f1(sz*.75)+'" fill="#1F7C80"/><circle cx="'+f1(X+sz*.25)+'" cy="'+f1(Y-sz*1.7)+'" r="'+f1(sz*.4)+'" fill="#2A9A8F"/>';
+  }
+  function archScene(litList,withDelay){
+    // 拱形窗景：一排小屋，屋頂上坐著巷弄貓
+    var row=[{id:'kv1',sz:9,h:9,roof:'gable'},{id:'kv2',sz:8,h:15,roof:'flat'},{id:'kv3',sz:9.5,h:9.5,roof:'gable'},{id:'kv4',sz:8,h:14,roof:'flat'},{id:'kv5',sz:9,h:9,roof:'gable'}];
+    var s='<svg viewBox="0 0 160 112" aria-hidden="true"><defs><clipPath id="arch'+(withDelay?'L':'K')+'"><path d="M14 112V56A66 56 0 0 1 146 56V112Z"/></clipPath></defs><g clip-path="url(#arch'+(withDelay?'L':'K')+')">'+
+      '<rect width="160" height="112" fill="#2338B8"/><circle cx="116" cy="30" r="9" fill="#FFE3A8"/><circle cx="120" cy="27" r="8" fill="#2338B8"/>'+
+      '<path d="M26 40h18a5 5 0 0 0 0-10h-2a6 6 0 0 0-11 1a4.5 4.5 0 0 0-5 9z" fill="#F6D6E4" opacity=".9"/><path d="M88 22h14a4 4 0 0 0 0-8h-1.5a5 5 0 0 0-9 .8a3.6 3.6 0 0 0-3.5 7.2z" fill="#F6D6E4" opacity=".8"/>'+
+      '<rect y="92" width="160" height="20" fill="#1B2A8A"/>'+treeSvg(20,93,7);
+    var x=34;
+    row.forEach(function(h,i){
+      if(withDelay) s+=houseSvg(h,x,93,0,-1)+'<g class="ld-lit" style="animation-delay:'+(.25+i*.35).toFixed(2)+'s">'+houseSvg(h,x,93,6,-1)+'</g>';
+      else s+=houseSvg(h,x,93,litList[i],-1);
+      if(i===2)s+='<use href="#cat" x="'+(x-3.5)+'" y="'+(93-h.h-h.sz*.8-6.4)+'" width="7" height="7" style="color:#141B5C"/>';
+      x+=h.sz*2+4.4});
+    return s+treeSvg(146,93,6.5)+'</g></svg>';
+  }
+
+  /* ================= 地圖：真實座標，上方是北（和 Google 地圖同方向），斜看一點點 ================= */
+  var C0=S.center||{lat:22.9922,lng:120.2061};
+  var LAT0=C0.lat, LNG0=C0.lng, KX=111320*Math.cos(LAT0*Math.PI/180), KY=110540, TQ=.72;
+  function xy(lat,lng){return [(lng-LNG0)*KX,(LAT0-lat)*KY]}
+  function pj(p){return [p[0],p[1]*TQ]}
+  function distSeg(p,a,b){var dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy,t=L?((p[0]-a[0])*dx+(p[1]-a[1])*dy)/L:0;t=Math.max(0,Math.min(1,t));return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy)}
+  function nearLine(p,pts,d){for(var i=0;i<pts.length-1;i++)if(distSeg(p,pts[i],pts[i+1])<d)return true;return false}
+  var STREETS=(S.streets||[]).map(function(st){return {name:st.name,w:st.width||14,pts:st.path.map(function(q){return xy(q[0],q[1])})}});
+  var ROUTE=(S.route||[]).map(function(q){return xy(q[0],q[1])});
+  var PARK=S.park?{name:S.park.name,c:xy(S.park.lat,S.park.lng),r:S.park.r||60}:null;
+
+  function buildHouses(){
+    var hs=[], r=rand(11);
+    SP.forEach(function(s,i){hs.push({id:s.id,no:i+1,g:xy(s.lat,s.lng),sz:7,h:10,cols:3,rows:2,roof:'gable',spot:true,name:s.name})});
+    function blocked(g,d){
+      if(hs.some(function(h){return Math.hypot(h.g[0]-g[0],h.g[1]-g[1])<d}))return true;
+      if(PARK&&Math.hypot(g[0]-PARK.c[0],g[1]-PARK.c[1])<PARK.r+8)return true;
+      return STREETS.some(function(st){return nearLine(g,st.pts,st.w/2+6)})||(ROUTE.length>1&&nearLine(g,ROUTE,7));
+    }
+    // 在路線兩側、以及整個範圍內鋪上鄰居小屋與樹
+    var xs=SP.map(function(s){return xy(s.lat,s.lng)[0]}).concat(ROUTE.map(function(p){return p[0]})),ys=SP.map(function(s){return xy(s.lat,s.lng)[1]}).concat(ROUTE.map(function(p){return p[1]}));
+    var x0=Math.min.apply(null,xs)-55,x1=Math.max.apply(null,xs)+55,y0=Math.min.apply(null,ys)-45,y1=Math.max.apply(null,ys)+45;
+    if(PARK){x0=Math.min(x0,PARK.c[0]-PARK.r*.75);y0=Math.min(y0,PARK.c[1]-PARK.r*.6);y1=Math.max(y1,PARK.c[1]+PARK.r*.6)}
+    for(var y=y0;y<=y1;y+=15)for(var x=x0;x<=x1;x+=16){
+      var g=[x+(r()-.5)*5,y+(r()-.5)*4];
+      if(r()<.25||blocked(g,12))continue;
+      hs.push({id:'f'+hs.length,g:g,sz:4.3+r()*1,h:r()>.82?10:5.6+r()*1.2,roof:r()>.8?'flat':'gable',spot:false,tree:r()>.8});
+    }
+    return {hs:hs,box:[x0,y0,x1,y1]};
+  }
+
+  /* opts: {lit:{id:n}, me:[lat,lng], flick:{id:idx}} → svg string + viewBox */
+  function mapSvg(opts){
+    opts=opts||{};
+    var B=buildHouses(), hs=B.hs, lit=opts.lit||{}, flick=opts.flick||{};
+    hs.forEach(function(h){h.p=pj(h.g)});
+    var tl=pj([B.box[0],B.box[1]]),br=pj([B.box[2],B.box[3]]);
+    var vb=[tl[0],tl[1]-12,br[0]-tl[0],br[1]-tl[1]+18];
+    var g='<g transform="scale(1 '+TQ+')"><rect x="-3000" y="-3000" width="6000" height="6000" fill="#1E2A86"/>';
+    for(var i=-30;i<=30;i++) g+='<path d="M'+(i*50)+' -3000V3000M-3000 '+(i*50)+'H3000" stroke="#24319A" stroke-width="1"/>';
+    if(PARK){ // 湯德章紀念公園：外圈車道、圓形草地、沿邊一圈大樹、四條步道通往中央廣場
+      var cx=PARK.c[0],cy=PARK.c[1],R=PARK.r;
+      g+='<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R+10)+'" fill="#3546B8"/><circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R+10)+'" fill="none" stroke="#5B74F0" stroke-width=".8" stroke-dasharray="4 5"/>';
+      g+='<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R+1.5)+'" fill="#7D8FE6"/><circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+R+'" fill="#1F7A68"/>';
+      for(var a=0;a<4;a++){var an=a*Math.PI/2+Math.PI/4;g+='<line x1="'+f1(cx+Math.cos(an)*R)+'" y1="'+f1(cy+Math.sin(an)*R)+'" x2="'+f1(cx)+'" y2="'+f1(cy)+'" stroke="#8FA0EA" stroke-width="5"/>'}
+      g+='<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R*.36)+'" fill="#26957E"/><circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R*.2)+'" fill="#8FA0EA"/><circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R*.11)+'" fill="#A9B6F2"/>';
+    }
+    STREETS.forEach(function(st){var d='M'+st.pts.map(function(p){return f1(p[0])+' '+f1(p[1])}).join('L');g+='<path d="'+d+'" fill="none" stroke="#3546B8" stroke-width="'+st.w+'" stroke-linecap="round" stroke-linejoin="round"/>'});
+    if(ROUTE.length>1){var rd='M'+ROUTE.map(function(p){return f1(p[0])+' '+f1(p[1])}).join('L');
+      g+='<path d="'+rd+'" fill="none" stroke="#2D3CB2" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="'+rd+'" fill="none" stroke="#FFD94D" stroke-width="1.6" stroke-dasharray="4 5" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>'}
+    g+='</g>';
+    var top2='', catDone=false;
+    // labels for streets and park
+    STREETS.forEach(function(st){var m=st.pts[Math.floor(st.pts.length/2)],a2=st.pts[0],b2=st.pts[st.pts.length-1],ang=Math.atan2((b2[1]-a2[1])*TQ,b2[0]-a2[0])*180/Math.PI;if(ang>90)ang-=180;if(ang<-90)ang+=180;var q=pj(m);
+      top2+='<text x="'+f1(q[0])+'" y="'+f1(q[1]+1.6)+'" text-anchor="middle" font-size="5" font-weight="700" fill="#B9C8FF" letter-spacing="2" transform="rotate('+f1(ang)+' '+f1(q[0])+' '+f1(q[1])+')" font-family="Noto Sans TC,sans-serif">'+esc(st.name)+'</text>'});
+    if(PARK){var pc=pj(PARK.c),pk='';
+      for(var t=0;t<22;t++){var an2=t/22*Math.PI*2+.07,rr2=PARK.r*(t%2?.8:.9),tp=pj([PARK.c[0]+Math.cos(an2)*rr2,PARK.c[1]+Math.sin(an2)*rr2]);if(Math.abs(Math.sin(an2-Math.PI/4)*Math.cos(an2-Math.PI/4))<.08)continue;pk+=treeSvg(tp[0],tp[1],t%3?4.6:5.6)}
+      // 中央：台座上的湯德章半身銅像
+      pk+='<ellipse cx="'+f1(pc[0])+'" cy="'+f1(pc[1]+.6)+'" rx="4.2" ry="1.6" fill="#6E7FD8"/><rect x="'+f1(pc[0]-2.4)+'" y="'+f1(pc[1]-6)+'" width="4.8" height="6.4" fill="#D9DEF5"/><rect x="'+f1(pc[0]-2.4)+'" y="'+f1(pc[1]-6)+'" width="1.4" height="6.4" fill="#BAC3EC"/><rect x="'+f1(pc[0]-3)+'" y="'+f1(pc[1]-6.8)+'" width="6" height="1" fill="#E8ECFA"/>'+
+        '<path d="M'+f1(pc[0]-2.6)+' '+f1(pc[1]-6.8)+'Q'+f1(pc[0])+' '+f1(pc[1]-10.2)+' '+f1(pc[0]+2.6)+' '+f1(pc[1]-6.8)+'Z" fill="#B07A4E"/><circle cx="'+f1(pc[0])+'" cy="'+f1(pc[1]-10.6)+'" r="1.7" fill="#C58C5C"/><path d="M'+f1(pc[0]-1.7)+' '+f1(pc[1]-11)+'A1.7 1.7 0 0 1 '+f1(pc[0]+1.7)+' '+f1(pc[1]-11)+'Z" fill="#8A5A38"/>';
+      g+=pk;
+      top2+='<text x="'+f1(pc[0])+'" y="'+f1(pc[1]+PARK.r*TQ*.36+5)+'" text-anchor="middle" font-size="4.6" font-weight="700" fill="#E6FFF6" stroke="#1F7A68" stroke-width="1.4" paint-order="stroke" font-family="Noto Sans TC,sans-serif">'+esc(PARK.name)+'</text>';
+    }
+    hs.slice().sort(function(a,b){return a.p[1]-b.p[1]}).forEach(function(h){
+      if(h.tree){g+=treeSvg(h.p[0],h.p[1],h.sz*.85);return}
+      var n=h.spot?(lit[h.id]||0):0;
+      if(h.spot&&!n) g+='<ellipse cx="'+f1(h.p[0])+'" cy="'+f1(h.p[1]+2)+'" rx="'+f1(h.sz*2.2)+'" ry="'+f1(h.sz*.9)+'" fill="#3D55D6" opacity=".55"/>';
+      g+='<g'+(h.spot?'':' opacity=".6"')+' class="house'+(h.spot?' spot':'')+(h.spot&&flick[h.id]!=null&&n===1?' litup':'')+'" data-id="'+(h.spot?h.id:'')+'">'+houseSvg(h,h.p[0],h.p[1],n,h.spot&&flick[h.id]!=null?flick[h.id]:-1)+'</g>';
+      var top=h.p[1]-h.h-h.sz*(h.roof==='gable'?.8:.3);
+      if(!catDone&&!h.spot&&h.roof==='gable'&&Math.abs(h.p[0])<40&&Math.abs(h.p[1])<30){catDone=true;
+        g+='<use href="#cat" x="'+f1(h.p[0]-3.5)+'" y="'+f1(top-6.5)+'" width="7" height="7" style="color:#141B5C"/>'}
+      if(h.spot){
+        top2+='<g class="house spot" data-id="'+h.id+'"><circle cx="'+f1(h.p[0]+h.sz*.4)+'" cy="'+f1(top-5)+'" r="4" fill="'+(n>=NW?'#FFD94D':'#2E4BE8')+'"/><text x="'+f1(h.p[0]+h.sz*.4)+'" y="'+f1(top-3.4)+'" text-anchor="middle" font-size="4.8" font-weight="900" fill="'+(n>=NW?'#2A2238':'#fff')+'" font-family="Noto Sans TC,sans-serif">'+h.no+'</text></g>';
+        top2+='<text x="'+f1(h.p[0])+'" y="'+f1(h.p[1]+6.5)+'" text-anchor="middle" font-size="4.2" font-weight="700" fill="#F3F1FA" stroke="#1E2A86" stroke-width="1.6" paint-order="stroke" font-family="Noto Sans TC,sans-serif">'+esc(h.name)+'</text>';
+      }
+    });
+    g+=top2;
+    if(opts.me){var m2=pj(xy(opts.me[0],opts.me[1]));if(m2[0]>vb[0]-40&&m2[0]<vb[0]+vb[2]+40&&m2[1]>vb[1]-40&&m2[1]<vb[1]+vb[3]+40)
+      g+='<circle cx="'+f1(m2[0])+'" cy="'+f1(m2[1])+'" r="12" fill="url(#mepool)"/><circle cx="'+f1(m2[0])+'" cy="'+f1(m2[1])+'" r="2.8" fill="#6FB6FF" stroke="#fff" stroke-width="1"/>'}
+    return {svg:g,vb:vb};
+  }
+
+  /* ================= 上傳佇列（網路不好時先存手機，之後補傳） ================= */
+  var dbp=null, memQ=[], flushing=false;
+  function db(){if(!dbp)dbp=new Promise(function(res,rej){try{var r=indexedDB.open('yintong-walk',1);r.onupgradeneeded=function(){r.result.createObjectStore('q',{keyPath:'qid'})};r.onsuccess=function(){res(r.result)};r.onerror=function(){rej()}}catch(e){rej()}});return dbp}
+  function tx(mode,fn){return db().then(function(d){return new Promise(function(res,rej){var t=d.transaction('q',mode),req=fn(t.objectStore('q'));t.oncomplete=function(){res(req&&req.result)};t.onerror=function(){rej()}})})}
+  function enqueue(item){item.qid=uid();return tx('readwrite',function(s){return s.put(item)}).catch(function(){memQ.push(item)}).then(function(){updatePending();flush()})}
+  function allQueued(){return tx('readonly',function(s){return s.getAll()}).catch(function(){return []}).then(function(l){l=l||[];return l.concat(memQ.filter(function(m){return !l.some(function(x){return x.qid===m.qid})}))})}
+  function removeQ(qid){memQ=memQ.filter(function(m){return m.qid!==qid});return tx('readwrite',function(s){return s.delete(qid)}).catch(function(){})}
+  function send(body){return fetch(S.uploadUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)}).then(function(r){return r.json()}).then(function(j){if(!j||!j.ok)throw new Error((j&&j.error)||'fail');return j})}
+  function setStatus(item,st){
+    var l=photos[item.spot]||[];l.forEach(function(p){if(p.id===item.body.phId)p.status=st});store('photos',photos);
+    if(st==='ok'){classCounts[item.spot]=(classCounts[item.spot]||0)+1;store('counts',classCounts)}
+    if(hook)hook();
+  }
+  function flush(){
+    if(!S.uploadUrl||flushing)return;
+    flushing=true;
+    allQueued().then(function(list){
+      list.sort(function(a,b){return a.qid<b.qid?-1:1});
+      return list.reduce(function(p,item){return p.then(function(stop){
+        if(stop){setStatus(item,'wait');return true}
+        setStatus(item,'up');
+        return send(item.body).then(function(){setStatus(item,'ok');return removeQ(item.qid).then(function(){return false})}).catch(function(){setStatus(item,'wait');return true});
+      })},Promise.resolve(false));
+    }).catch(function(){}).then(function(){flushing=false;updatePending()});
+  }
+  function updatePending(){allQueued().then(function(l){var n=$('pendN');if(n){n.hidden=!l.length;n.textContent=l.length}})}
+  window.addEventListener('online',flush);
+  setInterval(flush,45000);
+  var hook=null;
+
+  /* 全班每個地點的照片張數（點亮窗戶用） */
+  function fetchCounts(){
+    if(!S.uploadUrl)return Promise.resolve();
+    return fetch(S.uploadUrl+'?action=counts&key='+encodeURIComponent(S.uploadKey)).then(function(r){return r.json()}).then(function(j){
+      if(j&&j.ok&&j.counts){classCounts=j.counts;store('counts',classCounts);if(hook)hook()}}).catch(function(){});
+  }
+  setInterval(fetchCounts,30000);
+
+  function compress(file,max,q){return new Promise(function(res,rej){
+    if(!file||!/^image\//.test(file.type)){rej(new Error('請選擇圖片檔（JPG 或 PNG）。'));return}
+    var url=URL.createObjectURL(file),img=new Image();
+    img.onload=function(){var s=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);
+      var g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);res(c.toDataURL('image/jpeg',q))};
+    img.onerror=function(){URL.revokeObjectURL(url);rej(new Error('這張圖片無法開啟，請改用 JPG 或 PNG。'))};
+    img.src=url;
+  })}
+  var toastT=null;
+  function toast(t){var el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){el.classList.remove('on')},2600)}
+
+  var geo={lat:null,lng:null,watch:null};
+  function startGeo(cb){
+    if(!navigator.geolocation||geo.watch!=null){if(cb)cb();return}
+    try{geo.watch=navigator.geolocation.watchPosition(function(p){geo.lat=p.coords.latitude;geo.lng=p.coords.longitude;if(cb)cb()},function(){geo.watch=null},{enableHighAccuracy:true,maximumAge:15000,timeout:20000})}catch(e){}
+  }
+  function stopGeo(){if(geo.watch!=null){try{navigator.geolocation.clearWatch(geo.watch)}catch(e){}geo.watch=null}}
+
+  function meterHtml(){var t=totals(),pct=t.all?Math.round(t.lit/t.all*100):0;
+    return '<div class="meter"><div class="t"><span>全班已點亮 <b id="mLit">'+t.lit+'</b> / '+t.all+' 扇窗</span><span id="mPct">'+pct+'%</span></div><div class="bar"><i id="mBar" style="width:'+pct+'%"></i></div></div>'}
+  function updMeter(){var t=totals(),pct=t.all?Math.round(t.lit/t.all*100):0;if($('mLit')){$('mLit').textContent=t.lit;$('mPct').textContent=pct+'%';$('mBar').style.width=pct+'%'}}
+
+  /* ================= 頁面 ================= */
+  function pageHome(){
+    var h='<div class="wrap"><div class="kv">'+archScene([2,0,6,3,0],false)+'</div>'+
+      '<div style="display:grid;gap:8px"><div class="eyebrow">銀同社區・青年路／開山路</div><h1>'+esc(S.title)+'</h1>'+
+      (S.date?'<div><span class="date">'+esc(S.date)+'</span></div>':'')+'<p class="lead">'+esc(S.subtitle)+'</p></div>'+
+      '<p style="margin:0">'+esc(S.intro)+'</p>'+meterHtml();
+    if(profile){
+      h+='<div class="card"><div>歡迎回來，<b>'+esc(profile.name)+'</b>（'+esc(profile.sid)+'）</div>'+
+        '<a class="btn block" href="#map">走讀地圖</a><a class="btn ghost block" href="#folder">我的照片</a>'+
+        '<button class="btn ghost block" type="button" id="logout" style="font-size:13px;padding:8px">不是我？重新填寫</button></div>';
+    }else{
+      h+='<form class="card" id="pf" novalidate><h3>出發前，先寫下你是誰</h3>'+
+        '<div class="row2"><div class="field"><label for="p-sid">學號</label><input type="text" id="p-sid" autocomplete="off" placeholder="例：S11201234"></div>'+
+        '<div class="field"><label for="p-name">姓名</label><input type="text" id="p-name" autocomplete="name" placeholder="例：林小美"></div></div>'+
+        '<p class="small">名字只用來整理你上傳的照片。</p><div class="msg" id="pmsg" hidden></div><button class="btn block" type="submit">出發</button></form>';
+    }
+    h+='<footer class="foot">'+esc(S.host||'')+'</footer></div>';
+    app.innerHTML=h;
+    var f=$('pf');
+    if(f) f.addEventListener('submit',function(e){e.preventDefault();var sid=$('p-sid').value.trim(),name=$('p-name').value.trim();
+      if(!sid||!name){$('pmsg').textContent='請填寫學號和姓名。';$('pmsg').hidden=false;return}
+      profile={sid:sid.toUpperCase(),name:name};store('profile',profile);location.hash='map'});
+    var lo=$('logout');if(lo)lo.addEventListener('click',function(){profile=null;store('profile',null);render()});
+    hook=updMeter;fetchCounts();
+  }
+
+  function winsIcon(n){var s='<span class="wins" aria-hidden="true">';for(var i=0;i<NW;i++)s+='<i'+(i<n?' class="on"':'')+'></i>';return s+'</span>'}
+  function pageMap(){
+    var h='<div class="mapbox"><svg id="map" role="img" aria-label="走讀地圖，上方是北"></svg>'+
+      '<div class="mtop"><span class="chip"><i></i>每張照片點亮一扇窗</span><span class="chip"><span class="me"></span><span id="meTxt">定位中…</span></span></div>'+
+      '<svg class="north" viewBox="-20 -20 40 40" aria-hidden="true"><circle r="18" fill="rgba(20,27,92,.85)"/><path d="M0 -13 L6 4 L0 1 L-6 4 Z" fill="#FFD94D"/><text y="14" text-anchor="middle" font-size="9" font-weight="900" fill="#fff">N</text></svg></div>'+
+      '<div class="wrap" style="padding-top:14px">'+meterHtml()+
+      '<p class="small">黃色虛線是走讀路線，藍點是你的位置。點房子或下面的地點，拍下你注意到的細節。</p>'+
+      '<div class="spotlist" id="spotlist"></div>'+
+      '<footer class="foot">地圖依真實座標繪製，方向與 Google 地圖相同</footer></div>';
+    app.innerHTML=h;
+    var svg=$('map');
+    function draw(){
+      var lit={};SP.forEach(function(s){lit[s.id]=litOf(s.id)});
+      var m=mapSvg({lit:lit,me:geo.lat!=null?[geo.lat,geo.lng]:null});
+      svg.setAttribute('viewBox',m.vb.map(f1).join(' '));svg.innerHTML=m.svg;
+      $('spotlist').innerHTML=SP.map(function(s,i){var n=Math.min(NW,litOf(s.id)),mine=(photos[s.id]||[]).length;
+        return '<a class="spotrow" href="#'+s.id+'"><span class="no">'+(i+1)+'</span><span class="t"><b>'+esc(s.name)+'</b><span>我拍了 '+mine+' 張'+(n>=NW?'・整間亮了！':'')+(s.status==='draft'?'・待確認':'')+'</span></span>'+winsIcon(n)+'</a>'}).join('');
+      $('meTxt').textContent=geo.lat!=null?'你的位置':'未開啟定位';updMeter();
+    }
+    svg.addEventListener('click',function(e){var g=e.target.closest('.spot');if(g&&g.getAttribute('data-id'))location.hash=g.getAttribute('data-id')});
+    draw();hook=draw;
+    startGeo(function(){if(location.hash==='#map')draw()});
+    setTimeout(function(){if(geo.lat==null&&$('meTxt'))$('meTxt').textContent='未開啟定位'},8000);
+    fetchCounts();
+  }
+
+  function statusTxt(st){return {ok:'已上傳',wait:'等待補傳',up:'上傳中…',local:'只在手機'}[st]||''}
+  function heroSvg(id,n,flickIdx){
+    var h={id:id,sz:11,h:13,cols:3,rows:2,roof:'gable',spot:true};
+    return '<svg viewBox="4 4 62 48" role="img" aria-label="這一站的房子，亮了 '+Math.min(n,NW)+' 扇窗"><defs><clipPath id="harch"><path d="M8 52V24A27 20 0 0 1 62 24V52Z"/></clipPath></defs><g clip-path="url(#harch)"><rect x="0" y="0" width="70" height="56" fill="#2338B8"/><circle cx="54" cy="16" r="3.2" fill="#FFE3A8"/><circle cx="55.4" cy="15" r="2.9" fill="#2338B8"/><rect y="44" width="70" height="12" fill="#1B2A8A"/>'+
+      treeSvg(14,45,4.5)+'<g class="'+(n===1&&flickIdx===0?'litup':'')+'">'+houseSvg(h,33,45,Math.min(n,NW),flickIdx)+'</g>'+treeSvg(58,45,4)+'</g></svg>';
+  }
+  function pageSpot(id){
+    var s=P[id],i=SP.indexOf(s);
+    var h='<div class="wrap"><a class="back" href="#map">← 回地圖</a>'+
+      '<div style="display:grid;gap:6px"><div class="eyebrow">第 '+(i+1)+' 站</div><h2>'+esc(s.name)+'</h2>'+(s.status==='draft'?'<div><span class="tag">待確認</span></div>':'')+'</div>'+
+      '<div class="househero" id="hero"></div><div class="litline" id="litline"></div>'+
+      '<img class="spotimg" src="images/'+esc(s.image||s.id+'.jpg')+'" alt="'+esc(s.name)+'" onerror="this.remove()">'+
+      '<p style="margin:0">'+esc(s.intro)+'</p>'+
+      ((s.tasks&&s.tasks.length)?'<div style="display:grid;gap:8px"><div class="small">找找看，拍下來：</div><div class="tasks">'+s.tasks.map(function(t){return '<span>'+esc(t)+'</span>'}).join('')+'</div></div>':'')+
+      '<a class="small" style="color:var(--glow)" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+s.lat+','+s.lng+'">在 Google 地圖開啟</a>'+
+      '<div class="card"><h3>拍一張，亮一窗</h3>'+
+      (profile?'<p class="small">每上傳一張照片，這間房子就亮一扇窗（每人最多 '+S.maxPhotos+' 張）。'+(S.uploadUrl?'網路不好時會先存在手機，之後自動補傳。':'提醒：還沒設定上傳網址，照片目前只存在這支手機。')+'</p>'+
+        '<div class="thumbs" id="thumbs"></div><input type="file" id="ph" accept="image/*" multiple hidden><div class="msg" id="phmsg" hidden></div>'
+      :'<p class="small">要先在首頁寫下學號和姓名，才能上傳照片。</p><a class="btn ghost" href="#">回首頁填寫</a>')+'</div>'+
+      '<div class="pager">'+(i>0?'<a class="btn ghost" href="#'+SP[i-1].id+'">← 上一站</a>':'<span></span>')+(i<SP.length-1?'<a class="btn ghost" href="#'+SP[i+1].id+'">下一站 →</a>':'<a class="btn" href="#map">回地圖 →</a>')+'</div>'+
+      '</div>';
+    app.innerHTML=h;
+    function hero(flickIdx){var n=litOf(id);$('hero').innerHTML=heroSvg(id,n,flickIdx==null?-1:flickIdx);
+      $('litline').innerHTML=n>=NW?'這間房子<b>整間亮了！</b>全班在這裡拍了 '+n+' 張':'這間房子亮了 <b>'+Math.min(n,NW)+'</b> / '+NW+' 扇窗';}
+    hero();
+    hook=function(){hero();if($('thumbs'))thumbs()};
+    fetchCounts();
+    if(!profile)return;
+    function thumbs(){
+      var l=photos[id]||[],t=l.map(function(p){return '<div class="th"><img src="'+p.thumb+'" alt="'+esc(s.name)+' 的照片"><span class="st '+p.status+'">'+statusTxt(p.status)+'</span>'+(p.status==='ok'?'':'<button type="button" class="x" data-x="'+p.id+'" aria-label="刪除這張">×</button>')+'</div>'}).join('');
+      if(l.length<S.maxPhotos)t+='<label class="addph" for="ph"><span><b>＋</b>拍一張<br>亮一窗</span></label>';
+      $('thumbs').innerHTML=t;
+      $('thumbs').querySelectorAll('[data-x]').forEach(function(b){b.addEventListener('click',function(){
+        var pid=b.getAttribute('data-x');photos[id]=(photos[id]||[]).filter(function(p){return p.id!==pid});store('photos',photos);
+        allQueued().then(function(q){q.forEach(function(it){if(it.body.phId===pid)removeQ(it.qid)})}).then(updatePending);thumbs();hero()})});
+    }
+    thumbs();
+    $('ph').addEventListener('change',function(){
+      var l=photos[id]=photos[id]||[],room=S.maxPhotos-l.length,arr=Array.prototype.slice.call(this.files,0,Math.max(0,room));this.value='';
+      if(!arr.length){$('phmsg').textContent='每人在這一站最多 '+S.maxPhotos+' 張照片。';$('phmsg').hidden=false;return}
+      $('phmsg').hidden=true;
+      arr.reduce(function(p,f){return p.then(function(){return Promise.all([compress(f,1600,.82),compress(f,320,.7)]).then(function(out){
+        var before=litOf(id);
+        var ph={id:uid(),thumb:out[1],status:S.uploadUrl?'up':'local',ts:Date.now()};l.push(ph);
+        if(!store('photos',photos)){l.pop();throw new Error('手機空間不足，請先到「我的照片」補傳或刪掉幾張。')}
+        thumbs();hero(before<NW?before:-1);
+        toast(before+1>=NW&&before<NW?'整間房子都亮了！':'你點亮了一扇窗！');
+        if(S.uploadUrl) return enqueue({spot:id,body:{action:'photo',key:S.uploadKey,sid:profile.sid,name:profile.name,spot:id,spotName:s.name,phId:ph.id,ts:ph.ts,image:out[0]}});
+      })})},Promise.resolve()).catch(function(e){$('phmsg').textContent=e.message;$('phmsg').hidden=false});
+    });
+  }
+
+  function pageFolder(){
+    if(!profile){app.innerHTML='<div class="wrap"><div class="card"><h3>要先寫下學號和姓名</h3><a class="btn" href="#">回首頁</a></div></div>';return}
+    var total=0;SP.forEach(function(s){total+=(photos[s.id]||[]).length});
+    var h='<div class="wrap"><div style="display:grid;gap:6px"><div class="eyebrow">我的照片</div><h2>'+esc(profile.name)+' 點亮了 '+total+' 扇窗</h2>'+
+      '<p class="lead">'+(S.uploadUrl?'「已上傳」的照片已經存進計畫的雲端資料夾；「等待補傳」會在網路恢復後自動上傳，請不要清除瀏覽紀錄。':'還沒設定上傳網址，照片目前只存在這支手機。')+'</p></div>'+
+      (S.uploadUrl?'<div><button class="btn ghost" type="button" id="retry">立刻補傳</button> <span class="small" id="qn"></span></div>':'')+
+      SP.map(function(s,i){var l=photos[s.id]||[];return '<div class="card"><h3>'+(i+1)+'. '+esc(s.name)+'</h3>'+(l.length?'<div class="thumbs">'+l.map(function(p){return '<div class="th"><img src="'+p.thumb+'" alt=""><span class="st '+p.status+'" data-ps="'+p.id+'">'+statusTxt(p.status)+'</span></div>'}).join('')+'</div>':'<p class="small">這一站還沒有照片。<a href="#'+s.id+'">去拍照</a></p>')+'</div>'}).join('')+
+      '</div>';
+    app.innerHTML=h;
+    function upd(){allQueued().then(function(l){var q=$('qn');if(q)q.textContent=l.length?'還有 '+l.length+' 張等待上傳':'全部都上傳了'})}
+    hook=function(){SP.forEach(function(s){(photos[s.id]||[]).forEach(function(p){var el=document.querySelector('[data-ps="'+p.id+'"]');if(el){el.textContent=statusTxt(p.status);el.className='st '+p.status}})});upd()};
+    upd();
+    var r=$('retry');if(r)r.addEventListener('click',function(){flush();setTimeout(upd,1500)});
+  }
+
+  /* ================= 路由 ================= */
+  function render(){
+    var r=(location.hash||'').replace('#','');
+    hook=null;
+    if(r!=='map')stopGeo();
+    $('nav').hidden=!profile||r==='';
+    document.querySelectorAll('#nav a').forEach(function(a){if(a.getAttribute('data-r')===r)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
+    if(r==='map')pageMap();
+    else if(P[r])pageSpot(r);
+    else if(r==='folder')pageFolder();
+    else pageHome();
+    window.scrollTo(0,0);
+    updatePending();
+  }
+  (function loader(){
+    var el=$('loader');if(!el)return;
+    $('ldTitle').textContent=S.title||'';$('ldArt').innerHTML=archScene(null,true);
+    var t0=Date.now(),gone=false;
+    function hide(){if(gone)return;gone=true;el.classList.add('done');setTimeout(function(){el.remove()},700)}
+    function ready(){setTimeout(hide,Math.max(0,(reduce?300:2300)-(Date.now()-t0)))}
+    if(document.readyState==='complete')ready();else window.addEventListener('load',ready);
+    setTimeout(hide,6000);el.addEventListener('click',hide);
+  })();
+  window.addEventListener('hashchange',render);
+  render();
+  flush();
+})();
+</script>
+</body>
+</html>
